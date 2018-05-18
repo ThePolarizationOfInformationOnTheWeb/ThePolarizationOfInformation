@@ -15,6 +15,14 @@ description: This script contains methods used to crawl the the web and obtain
              The Data will be stored in tables for each domain in a mysql 
              database. Tables will hold information such as article headline, 
              text, referrences, image urls, tweets, and ...
+             
+             In tweetSearch (currently line 310) : add your twitter account 
+             OAuth tokens for acces to the twitter API. This can be easily obtained 
+             if you have a twitter account.
+
+             In crawlByTopic(topic) searches the topic string in google news, google search(ToDo), 
+             and twiiter's api and begins following the articles and creating or updating tables in 
+             existing mysql database.
 """
 
 from bs4 import BeautifulSoup #html parsing tool#
