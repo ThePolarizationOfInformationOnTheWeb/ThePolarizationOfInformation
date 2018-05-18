@@ -4,6 +4,11 @@
 Created on Sun Oct 15 10:56:16 2017
 
 @author: charlesdickens
+
+edit the appropriate host name, port, 
+username, password, database, and charset. 
+These are just defaults and most likely won't 
+work on your machine.
 """
 
 
