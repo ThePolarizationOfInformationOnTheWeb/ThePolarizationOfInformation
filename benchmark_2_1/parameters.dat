@@ -1,0 +1,12 @@
+#############################################################################
+###############################################################################
+500	#number of nodes
+25	#average degree
+75	#maximum degree
+2	#exponent for the degree distribution
+2	#exponent for the community size distribution
+0.3	#mixing parameter
+15	#minimum for the commmunity sizes (optional; just comment this line, if you wish)
+75	#maximum for the community sizes (optional; just comment this line, if you wish)
+###############################################################################
+###############################################################################
