@@ -30,7 +30,7 @@ class MySqlConn:
         self._db_connection.close()
     
     """
-    function:    mySqlConnection 
+    function:    mySqlDatabase 
     parameters:  topic:          String describing topic of interest. 
                                  Used database name.
     
@@ -131,7 +131,7 @@ class MySqlConn:
     parameters:  domainName:    the domain name table to be added to the database
                                 being USEd by the mySql connection
                  sqlConn:       the mySql connection
-    description: create a table in the mySql database being USEd by the mysql 
+    description: create a table in the mySql database being used by the mysql 
                  connection with title matching the domain name
     """
     def createTable(self, domainName):
