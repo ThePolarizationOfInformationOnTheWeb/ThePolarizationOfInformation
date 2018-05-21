@@ -1,5 +1,6 @@
 import twitter
 import sys
+import json
 
 def main():
     with open("../consumer_key.txt", "r") as consumer_key_f:
@@ -20,9 +21,14 @@ def main():
 
     api = twitter.Api(consumer_key=consumer_key2, consumer_secret=consumer_secret2, access_token_key=access_key2, access_token_secret=access_secret2)
 
-    results = api.GetSearch(raw_query='q=' + str(sys.argv[1]))
+    results = api.GetSearch(raw_query='q=' + str(sys.argv[1]) + '&count=' + str(sys.argv[2]))
 
-    print(results)
+    jresults = []
+    
+    for result in results:
+        jresults.append(json.dumps(result._json))
 
+    print(jresults)
+        
 if __name__ == "__main__":
     main()
