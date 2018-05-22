@@ -25,8 +25,8 @@ from pylab import get_current_fig_manager,show,plt,imshow
 import os
 import community
 import igraph
-from NewsCrawlerGraph import newsCrawlerGraph
-import newsCrawler2
+#from NewsCrawlerGraph import newsCrawlerGraph
+#import newsCrawler2
 from MySqlNewsCrawler import MySqlConn
 
 
@@ -162,6 +162,9 @@ def transval(Adj, node_clusters):
         TranProb.append([H[v][z]['weight']/float(qq) for z in H.neighbors_iter(v)])
     
     TranCumul = [list(list_incr(TranProb[v])) for v in range(H.number_of_nodes())]
+    
+    print TranList
+    print TranCumul
         
     return TranList, TranCumul
 
