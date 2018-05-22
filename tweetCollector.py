@@ -9,7 +9,8 @@ description: This file contains scripts to collect tweet and twitter user data
              related to a specified topic.
 """
 
-with open('progressive-tweet-sentiment.csv') as csvfile:
-    csv.reader(csvfile, delimiter=',', quotechar='|')
-    for row in spamreader:
-        print row
+tweets = []
+with open('progressivetweets.csv') as csvfile:
+    csvreader = csv.reader(csvfile)
+    for row in csvreader:
+        tweets.append(row)
