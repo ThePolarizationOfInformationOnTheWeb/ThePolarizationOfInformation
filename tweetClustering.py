@@ -3,31 +3,16 @@
 
 import copy
 import numpy as np
-from numpy.random import rand
 import operator
 import random
 import collections
 from operator import itemgetter
 import itertools
-import time
-import cPickle as pickle
 import matplotlib.pyplot as plt 
-import scipy
-from scipy import stats
 import networkx as nx
-import math
-import cmath
 import bisect
-import matplotlib
-from joblib import Parallel, delayed 
-import multiprocessing
-import sys
-from numpy import linalg as LA
-import pylab
-from pylab import get_current_fig_manager,show,plt,imshow
 import os
-import community
-import igraph
+import csv
 
 """
 Created on Tue May 22 10:25:39 2018
@@ -40,24 +25,62 @@ todo
 """
 def tweetClustering(topic):
     cpl = 1
-    TranList, TranCumul, nodeIdMap = tweet_gen(topic)
+    TranList, TranCumul = tweetGraphGen(topic)
     if cpl:
         TranList, TranCumul = couple1(TranList, TranCumul)
     
-    numnodes = len(TransList)
+    numnodes = len(TranList)
     
     Adj = [[1 if i != j else 0 for i in range(numnodes)] for j in range(numnodes)]
     
-    BackwardPathTweet(Adj, TranList, TranCumul, nodeIdMap)
+    BackwardPathTweet(Adj, TranList, TranCumul)
     print 'finished algorithm'
     
     
-def tweet_gen(topic):
-    tweets = []
-    with open('progressivetweets.csv') as csvfile:
-        csvreader = csv.reader(csvfile)
+def tweetGraphGen(topic):
+    lines = []
+    with open("./DataFiles/" + topic + ".csv", "r") as f:
+        i = 0
+        csvreader = csv.reader(f)
         for row in csvreader:
-            tweets.append(row)
+            if (i == 0):
+                i = 1
+            else:
+                lines.append(row)
+
+    weightlist = []
+    indexlist = []
+    transProbList = []
+    
+    for tweeta in lines:
+        tweetaweights = []
+        tweetaindex = []
+        b = 0
+        for tweetb in lines:
+            if (tweeta != tweetb):
+                weight = float(tweeta[4]) - float(tweetb[4])
+                weight = 2 - abs(weight)
+                weight = weight/2 * weight/2
+                tweetaweights.append(weight)
+                tweetaindex.append(b)
+            b = b + 1
+        weightlist.append(tweetaweights)
+        indexlist.append(tweetaindex)
+    
+    
+    for w in weightlist:
+        totalWeight = sum(w)
+        transProbList.append([wt / totalWeight for wt in w])
+        
+    transProbCumulList = []
+    transProbCumulList = [list(list_incr(transProbList[v])) for v in range(len(weightlist))]
+    
+    
+        
+    return indexlist, transProbCumulList
+    
+
+    
     
 #return second largest value in list
 def max2(x):
@@ -194,7 +217,7 @@ def CCPivot(num_nodes, TranList, Adj):
     return 0.5*(np.sum(np.not_equal(Adj,induced_graph))),cluster
 
    # perform CFTP and record clusters along the critical time (refer to paper for critical times)
-def BackwardPathTweet(Adj, TranList, TranCumul, nodeIdMap):
+def BackwardPathTweet(Adj, TranList, TranCumul):
     u=[]
     flag=0 #algorithm is done
     interval=0 #time
@@ -271,7 +294,8 @@ def BackwardPathTweet(Adj, TranList, TranCumul, nodeIdMap):
             cluster_size_median.append(calcSizeMedian(coelsce_tracker_users[0]))
             
             text += 'time = -'+str(interval)+'\n'
-            text += 'current state = '+str(current_state)+'\n'                    
+            text += 'current state = '+str(current_state)+'\n'
+            text += 'current clusters = '+str(coelsce_tracker_users)+'\n'                    
                 
         #on subsequent iterations
         else:
@@ -378,8 +402,6 @@ def BackwardPathTweet(Adj, TranList, TranCumul, nodeIdMap):
     text += 'cost at lowest conductance = '+str(lowest_conductance_cost)+'\n'
     text += 'lowest cost clusters = '+str(optimal_cluster)+'\n'
     text += 'lowest conductance clusters = '+str(lowest_conductance_cluster)+'\n'
-    text += 'Node to Article Mapping =' + str(nodeIdMap) + '\n'
-
     
     #create directory for output files
     if not os.path.exists('outdir'):
