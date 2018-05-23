@@ -60,7 +60,7 @@ def tweetGraphGen(topic):
             if (tweeta != tweetb):
                 weight = float(tweeta[4]) - float(tweetb[4])
                 weight = 2 - abs(weight)
-                weight = weight/2 * weight/2
+                weight = weight/2
                 tweetaweights.append(weight)
                 tweetaindex.append(b)
             b = b + 1
@@ -502,7 +502,7 @@ def conductanceCalc(nx_Graph, clustering, nodeList):
         
         conductanceVals.append((float(cut_size) / float(min(VolumeNotI, VolumeI))))
 
-    return (sum(conductanceVals) / len(conductanceVals))
+    return np.median(conductanceVals)
 
 ##########################################################################################
 #calculate the size range of clusterings
