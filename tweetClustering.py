@@ -13,6 +13,8 @@ import networkx as nx
 import bisect
 import os
 import csv
+import re
+import politicianweightlist as pweight
 
 """
 Created on Tue May 22 10:25:39 2018
@@ -25,7 +27,7 @@ todo
 """
 def tweetClustering(topic):
     cpl = 1
-    TranList, TranCumul = tweetGraphGen(topic)
+    TranList, TranCumul, dataFrame = tweetGraphGen(topic)
     if cpl:
         TranList, TranCumul = couple1(TranList, TranCumul)
     
@@ -34,8 +36,53 @@ def tweetClustering(topic):
     Adj = [[1 if i != j else 0 for i in range(numnodes)] for j in range(numnodes)]
     
     BackwardPathTweet(Adj, TranList, TranCumul)
+    
+    ForCluster = [i for i in range(len(dataFrame)) if re.match('^F',dataFrame[i][2]) != None]
+    AgainstCluster = [i for i in range(len(dataFrame)) if re.match('^A',dataFrame[i][2]) != None]
+    
+    nx_Graph = nx.Graph()
+    
+    for i in range(len(Adj)):
+        nx_Graph.add_edges_from([(i, j) for j in range(i, len(Adj[i])) if Adj[i][j] == 1])
+            
+    nodeList = nx_Graph.nodes()
+    
+    sentimentConductance = conductanceCalc(nx_Graph, [ForCluster, AgainstCluster], nodeList)
+    
+    with open('outdir/outputSentimentClustering'+topic+'.txt', 'w') as f:
+        f.write('Clustering:' + str([ForCluster, AgainstCluster]) + '\n' + 
+                'Conductance' + str(sentimentConductance))
+        print 'outdir/output/sentimentClustering'+topic+'.txt'
+    
     print 'finished algorithm'
     
+def politicianClustering():
+    cpl = 1
+    TranList, TranCumul = politicianGraphGen()
+    if cpl:
+        TranList, TranCumul = couple1(TranList, TranCumul)
+    
+    numnodes = len(TranList)
+    
+    Adj = [[1 if i != j else 0 for i in range(numnodes)] for j in range(numnodes)]
+    
+    BackwardPathTweet(Adj, TranList, TranCumul)
+    
+    print 'finished algorithm'
+    
+def politicianGraphGen():
+    pw = pweight.politicianweightlist
+    transProb = []
+    indexlist = [[i for i in xrange(len(pw)) if i != j] for j in xrange(len(pw))]
+    for incEdges in pw:
+        totalWeight = sum(incEdges)
+        transProb.append([i / totalWeight for i in incEdges])
+        
+    
+    transProbCumulList = []
+    transProbCumulList = [list(list_incr(transProb[v])) for v in range(len(pw))]
+
+    return indexlist, transProbCumulList
     
 def tweetGraphGen(topic):
     lines = []
@@ -77,7 +124,7 @@ def tweetGraphGen(topic):
     
     
         
-    return indexlist, transProbCumulList
+    return indexlist, transProbCumulList, lines
     
 
     
@@ -233,6 +280,7 @@ def BackwardPathTweet(Adj, TranList, TranCumul):
     lowest_conductance = 1e300
     conductance_values = [] #list to store the conductance value at each critical time
     nodeList = []
+    interConductanceValues= []
     
     
     #generate networkx graph to obtain conductance values of clusterings after each critical time
@@ -281,6 +329,23 @@ def BackwardPathTweet(Adj, TranList, TranCumul):
             
             #calculate and save the average conductance value to the list  
             conductance_values.append(conductanceCalc(nx_Graph, coelsce_tracker_users[0], nodeList))
+# =============================================================================
+#             tempInterConductance = []
+#             for cluster in coelsce_tracker_users[0]:
+#                 temp_nodes = copy.deepcopy(cluster)
+#                 temp_nx_Graph = nx.Graph()
+#                 
+#                 for i in range(len(Adj)):
+#                     temp_nx_Graph.add_edges_from([(i, j) for j in range(i, len(Adj[i])) if Adj[i][j] == 1 and i in cluster and j in cluster])
+#                     
+#                 if len(cluster) != 1:
+#                     randomIndex = random.randint(0,len(cluster) - 1)
+#                     c = cluster[randomIndex]
+#                     del cluster[randomIndex]
+#                     tempInterConductance.append(conductanceCalc(temp_nx_Graph, [[c], cluster], temp_nodes))
+#             
+#             interConductanceValues.append(np.median(tempInterConductance))
+# =============================================================================
             
             #update lowest conductance 
             if conductance_values[len(conductance_values) - 1]<lowest_conductance:
@@ -371,6 +436,25 @@ def BackwardPathTweet(Adj, TranList, TranCumul):
                 #calculate and save the average conductance value to the list 
                 conductance_values.append(conductanceCalc(nx_Graph, coelsce_tracker_users[0], nodeList))
                 
+# =============================================================================
+#                 tempInterConductance = []
+#                 for cluster in coelsce_tracker_users[0]:
+#                     temp_nodes = copy.deepcopy(cluster)
+#                     temp_nx_Graph = nx.Graph()
+#                 
+#                     for i in range(len(Adj)):
+#                         temp_nx_Graph.add_edges_from([(i, j) for j in range(i, len(Adj[i])) if Adj[i][j] == 1 and i in cluster and j in cluster])
+#                     
+#                     if len(cluster) != 1:
+#                         randomIndex = random.randint(0,len(cluster) - 1)
+#                         c = cluster[randomIndex]
+#                         del cluster[randomIndex]
+#                         tempInterConductance.append(conductanceCalc(temp_nx_Graph, [[c], cluster], temp_nodes))
+#             
+#                 interConductanceValues.append(np.median(tempInterConductance))  
+# =============================================================================
+                
+                
                 #update lowest conductance 
                 if conductance_values[len(conductance_values) - 1]<lowest_conductance:
                     lowest_conductance=conductance_values[len(conductance_values) - 1]
@@ -445,6 +529,20 @@ def BackwardPathTweet(Adj, TranList, TranCumul):
     plt.xlabel('critical times'); plt.ylabel('Number of Clusters'); 
     plt.savefig('outdir/plotnumclusters'+str(nn)+'.png')
     plt.close()
+# =============================================================================
+#     
+#     plt.figure()
+#     plt.subplot(211)
+#     plt.plot(critical_times, conductance_values, 'r')
+#     plt.plot(critical_times, conductance_values, '*r')
+#     plt.xlabel('critical times'); plt.ylabel('Mean Conductance Between Clusters'); 
+#     plt.subplot(212)
+#     plt.plot(critical_times, interConductanceValues, 'b')
+#     plt.plot(critical_times, interConductanceValues, '*b')
+#     plt.xlabel('critical times'); plt.ylabel('Mean Conductance Within Clusters');
+#     plt.savefig('outdir/plotConductance'+str(nn)+'.png')
+#     plt.close() 
+# =============================================================================
     
     
 ##########################################################################################
@@ -486,62 +584,7 @@ def conductanceCalc(nx_Graph, clustering, nodeList):
     
     conductanceVals = []
     
-    for i in clustering:
-        #calculate the cutsize of the clustering to the rest of the graph 
-        cut_size = len(nx.edge_boundary(nx_Graph, i, list(set(nodeList) - set(i))))
-        
-        #calculate the volume of the community
-        VolumeI = 0
-        for j in i:
-            VolumeI += nx_Graph.degree(j)
-         
-        #calculate the volume of the rest of the graph
-        VolumeNotI = 0
-        for k in i:
-            VolumeNotI += nx_Graph.degree(k)
-        
-        conductanceVals.append((float(cut_size) / float(min(VolumeNotI, VolumeI))))
-
-    return np.median(conductanceVals)
-
-##########################################################################################
-#calculate the size range of clusterings
-#clustering - the list of communities found by the backwardpath algorithm
-def calcSizeRange(clustering):
-    
-    low = len(clustering[0]) #smallest cluster size intialization
-    high = low #greatest cluster size initialization
-    
-    for i in clustering:
-        #compare low and high to size of i and update low and high appropriately
-        if low > len(i):
-            low = len(i)
-        
-        if high < len(i):
-            high = len(i)
-    
-    return high - low
-
-##########################################################################################
-#calculate the size median of clusterings
-#clustering - the list of communities found by the backwardpath algorithm
-def calcSizeMedian(clustering):
-    
-    size_list = [] #list of community sizes
-    
-    for i in clustering:
-        size_list.append(len(i))
-    
-    return np.median(np.array(size_list))
-    
-
-##########################################################################################
-#calculate the average conductance of the clusterings
-#nx_Grapg - the networkx graph
-#clustering - the list of communities found by the backwardpath algorithm
-def conductanceCalc(nx_Graph, clustering, nodeList):
-    
-    conductanceVals = []
+    print clustering
     
     for i in clustering:
         #calculate the cutsize of the clustering to the rest of the graph 
@@ -559,4 +602,6 @@ def conductanceCalc(nx_Graph, clustering, nodeList):
         
         conductanceVals.append((float(cut_size) / float(min(VolumeNotI, VolumeI))))
 
-    return (sum(conductanceVals) / len(conductanceVals))
+    return np.mean(conductanceVals)
+    
+

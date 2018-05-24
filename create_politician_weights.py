@@ -19,7 +19,7 @@ for itema in dictionary:
                 maxaweight = weight
             itemaweights.append(weight)
             itemaindex.append(b)
-        b = b + 1
+            b = b + 1
     itemaweights = [float(a)/float(maxaweight) for a in itemaweights]
     weightlist.append(itemaweights)
     indexlist.append(itemaindex)
