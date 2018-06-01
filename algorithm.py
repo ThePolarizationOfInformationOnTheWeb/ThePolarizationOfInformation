@@ -163,8 +163,6 @@ def transval(Adj, node_clusters):
     
     TranCumul = [list(list_incr(TranProb[v])) for v in range(H.number_of_nodes())]
     
-    print TranList
-    print TranCumul
         
     return TranList, TranCumul
 
@@ -197,7 +195,7 @@ def transvalNews(Adj):
     TranList=[]
     TranProb=[]
     
-    #for each node, we compute the normalized wight. For example if node 1 has three neighbors [2,3,4], then:
+    #for each node, we compute the normalized weight. For example if node 1 has three neighbors [2,3,4], then:
     for v in xrange(len(Adj)):
         qq=sum(Adj[v]) #sum of the row
         TranList.append([z for z in xrange(len(Adj)) if Adj[v][z] != 0])
@@ -216,64 +214,110 @@ def max2(x):
     return max(y)
     
 #calculate transition values with new coupling
-def couple1(TranList, TranCumul):
-    #attempt to fix rounding errors
-#    TranCumul = [[round(i, 15) for i in j] for j in TranCumul]
-    
+def couple1(TranList, TranCumul):    
     n = len(TranList)
+    #from the Cumulative distribution calculate the probability mass function
     TranProb = [[i[0]]+list(np.diff(i)) for i in TranCumul]
-    
+    #cut off at 15 decimal places of precision
     TranProb = [[round(i, 15) for i in j] for j in TranProb]    
     
-    #D = sum_{x} max2_{s} p(s->x)   
+    #D = sum_{x} max2_{s} p(s->x) 
+    #mx2 is the list of the 2nd largest inward edge transition probabilities 
+    #for all the nodes, i.e. if Ej is the set of edges with terminating vertex 
+    #j, then Tj is the list of transition probabilities corresponding to the 
+    #edges in Ej, then mx2[j] is the 2nd largest element of Tj.
     mx2 = [max2([TranProb[i][TranList[i].index(j)] for i in range(n) if j in TranList[i]]) for j in range(n)]
-    D = sum(mx2) #normalizing factor
+    #D is the sum of all the sum of all the 2nd largest inward edge transition 
+    #probabilities, we call D our normalizing factor for mx2.
+    D = sum(mx2)
 
+    #ref is the list of the 2nd largest inward edge transition probabilities 
+    #for all the nodes divided by the normalizing factor setting each value of 
+    #ref to be between 0 and 1, the sum of ref should be 1.
     ref = [i/D for i in mx2] #division for each state
-    l = [[] for i in TranList]
-    q = [[] for i in TranProb]
-    r = [[] for i in TranList]
+    #l,q, and r are lists of empty lists, 1 list for each entry in TranList, 
+    #i.e. 1 list for each node.
+    l = [[] for i in TranList] #the states associated with transition
+    q = [[] for i in TranProb] #the transition probabilities, if l[i][j] is -1 
+                               #then this holds the remaing probability mass 
+                               #from ref[j] 
+    r = [[] for i in TranList] #the remaining probability mass from original 
+                               #transition probabilities
     #assign probabilities to allocated space
-    for i in range(n):
+    for i in range(n): #recall n is the number of nodes in our graph
         for j in range(n):
-            if j in TranList[i]: #neighbors
-                k = TranList[i].index(j)
-                if TranProb[i][k] > ref[j]: #more probability than allocated space
-                    q[i].append(ref[j]) #assign probability
-                    l[i].append(j) #state associated with probability
-                    r[i].append(TranProb[i][k]-ref[j]) #keep track of remaining probability
-                else: #more allocated space than probability
-                    q[i].append(TranProb[i][k]) #assign probability
-                    l[i].append(j) #state associated with probability
-                    q[i].append(ref[j]-TranProb[i][k]) #empty space not assigned
+            if j in TranList[i]: #there exists a directed edge, e, from i to j 
+                k = TranList[i].index(j) #k is the index to find the 
+                                         #corresponding transition probability
+                                         #for traversing e when you are at 
+                                         #state i.
+                if TranProb[i][k] > ref[j]: #more probability than allocated 
+                                            #space. i.e. the transition 
+                                            #probability from node i to j is 
+                                            #larger than the 2nd largest 
+                                            #transition probability with j as
+                                            #the terminating node divided by D
+                    q[i].append(ref[j]) #assign probability, the value in ref[j]
+                    l[i].append(j) #state associated with probability, i.e. node
+                    r[i].append(TranProb[i][k]-ref[j]) #keep track of remaining 
+                                                       #probability. we find the 
+                                                       #difference between the 
+                                                       #original transition 
+                                                       #probability and ref[j]
+                else: #more allocated space than probability. i.e. the transition 
+                      #probability from node i to j is less than or equal to the 
+                      #2nd largest transition probability with j as the terminating 
+                      #node divided by D
+                    l[i].append(j) #state associated with probability, i.e. node
+                    q[i].append(TranProb[i][k]) #assign probability, the original
+                                                #transition probability
                     l[i].append(-1) #mark as unassigned space
-                    r[i].append(0) #no left over
-            else: #not neighbors
-                q[i].append(ref[j])
+                    q[i].append(ref[j]-TranProb[i][k]) #empty space not assigned,
+                                                       #difference between ref[j] 
+                                                       #and the original 
+                                                       #transition probbability,
+                    r[i].append(0) #no left over probability mass from the 
+                                   #original transition probability
+            else: #not neighbors, i.e. original transition probability is 0 
+                  #from i to j
+                q[i].append(ref[j]) #empty space not assigned, all of ref[j]
                 l[i].append(-1) #mark as unassigned
                 r[i].append(0)
     
     #fill in remaining probabilities    
     #iterate backwards when filling in probabilities to avoid index problems
     for i in range(n): 
-        for j in range(len(l[i])-1, -1, -1): #look for empty spaces
-            if l[i][j] == -1:
-                for k in range(len(r)-1, -1, -1): #remaining probabilities
-                    if r[i][k] > 0:
-                        if round(r[i][k], 15) <= round(q[i][j], 15): #more space than probability
-                            q[i].insert(j+1, r[i][k])
-                            q[i][j] -= r[i][k]
-                            l[i].insert(j+1, k)
-                            l[i][j] = -1
-                            r[i][k] = 0 #no remaining probability for that state                            
+        for j in range(len(l[i])-1, -1, -1): #look for empty spaces, iterate 
+                                             #through a list of indices for l[i]
+                                             #in reverse order
+            if l[i][j] == -1: #there is left over probability mass from ref[j] 
+                              #that may be assigned 
+                for k in range(len(r)-1, -1, -1): #iterate over all indices of 
+                                                  #r in reverse order
+                    if r[i][k] > 0: #there is left over mass from the original
+                                    #transition probability that has yet to be 
+                                    #assigned
+                        if round(r[i][k], 15) <= round(q[i][j], 15): 
+                            #more space than probability, i.e. there is more 
+                            #probability mass left from ref[j] than there is 
+                            #left over original transition probability mass that
+                            #has not been assigned yet
+                            q[i].insert(j+1, r[i][k]) #add transistion probability
+                            q[i][j] -= r[i][k] #update left over space from ref[j]
+                            l[i].insert(j+1, k) #add corresponging state (node)
+                                                #for transition
+                            l[i][j] = -1 #there is still some space left to 
+                                         #allocate from ref[j]
+                            r[i][k] = 0 #no remaining probability mass for that 
+                                        #state (node)                          
                         else: #more probability than space
                             r[i][k] -= q[i][j] #still keep track of remaining probability for that state
                             l[i][j] = k #track which state
                             break
                             
-    q = [list(np.cumsum(i)) for i in q] #cumulative sum
+    q = [list(np.cumsum(i)) for i in q]#new cdf for transition probabilities
     
-    #remove remaining -1s from rounding errors
+    #remove remaining -s from rounding errors
     for i in range(n):
         for j in range(len(l[i])-1, -1, -1):
             if l[i][j] == -1:
@@ -497,6 +541,8 @@ def BackwardPath(Adj, node_clusters, TranList, TranCumul):
 #        text += 'time = -'+str(interval)+'\n'
 
         #move chains interval number of times according to RVs in u
+        #should a transit at a time be dependent on a random vector rather 
+        #than a single random variable?
         for k in range(0, interval):
             current_state=copy.deepcopy(map (lambda x: OneStepTransit(TranCumul, TranList, x,u[k]), current_state))
 
@@ -571,7 +617,8 @@ def BackwardPath(Adj, node_clusters, TranList, TranCumul):
                 #count occurances of each chain in set of states whos chains are partially coalescing
                 mycount=[1]*len(current_G_state)
                 for k in range(0, interval):
-
+        #should a transit at a time be dependent on a random vector rather 
+        #than a single random variable?
                     current_G_state=copy.deepcopy(map (lambda x: OneStepTransit (TranCumul, TranList, x,u[k]),current_G_state))
 
                     for j in range(len(current_G_state)):

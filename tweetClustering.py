@@ -68,16 +68,23 @@ def politicianClustering():
     
     BackwardPathTweet(Adj, TranList, TranCumul)
     
+    
+    
     print 'finished algorithm'
     
 def politicianGraphGen():
     pw = pweight.politicianweightlist
     transProb = []
     indexlist = [[i for i in xrange(len(pw)) if i != j] for j in xrange(len(pw))]
+    currIndex = 0
     for incEdges in pw:
         totalWeight = sum(incEdges)
-        transProb.append([i / totalWeight for i in incEdges])
-        
+        if totalWeight != 0:
+            transProb.append([i / totalWeight for i in incEdges])
+        else:
+            transProb.append([0 for _ in incEdges])
+            transProb[currIndex][currIndex] = 1
+        currIndex = currIndex + 1
     
     transProbCumulList = []
     transProbCumulList = [list(list_incr(transProb[v])) for v in range(len(pw))]
@@ -433,8 +440,12 @@ def BackwardPathTweet(Adj, TranList, TranCumul):
                 text += 'current state = '+str(current_state)+'\n'
                 text += 'current clusters = '+str(coelsce_tracker_users)+'\n'
                 
-                #calculate and save the average conductance value to the list 
-                conductance_values.append(conductanceCalc(nx_Graph, coelsce_tracker_users[0], nodeList))
+                #calculate and save the average conductance value to the list
+                c = conductanceCalc(nx_Graph, coelsce_tracker_users[0], nodeList)
+                if len(coelsce_tracker_users[0]) == 1:
+                    c = 1
+                
+                conductance_values.append(c)
                 
 # =============================================================================
 #                 tempInterConductance = []
@@ -502,14 +513,16 @@ def BackwardPathTweet(Adj, TranList, TranCumul):
     #plot a bunch of things
     plt.figure()
     plt.subplot(211)
-    plt.plot(critical_times, critical_times_cost, 'r')
-    plt.plot(critical_times, critical_times_cost, '*r')
-    plt.xlabel('critical times'); plt.ylabel('cost'); 
-    plt.subplot(212)
+# =============================================================================
+#     plt.plot(critical_times, critical_times_cost, 'r')
+#     plt.plot(critical_times, critical_times_cost, '*r')
+#     plt.xlabel('critical times'); plt.ylabel('cost'); 
+#     plt.subplot(212)
+# =============================================================================
     plt.plot(critical_times, conductance_values, 'b')
     plt.plot(critical_times, conductance_values, '*b')
     plt.xlabel('critical times'); plt.ylabel('Mean Conductance');
-    plt.savefig('outdir/plot'+str(nn)+'.png')
+    plt.savefig('outdir/plot'+str(nn)+'.png', dpi = 500)
     plt.close() 
     
     plt.figure()
@@ -527,7 +540,7 @@ def BackwardPathTweet(Adj, TranList, TranCumul):
     plt.figure()
     plt.plot(critical_times, num_clusters, 'r')
     plt.xlabel('critical times'); plt.ylabel('Number of Clusters'); 
-    plt.savefig('outdir/plotnumclusters'+str(nn)+'.png')
+    plt.savefig('outdir/plotnumclusters'+str(nn)+'.png', dpi = 500)
     plt.close()
 # =============================================================================
 #     
@@ -583,8 +596,6 @@ def calcSizeMedian(clustering):
 def conductanceCalc(nx_Graph, clustering, nodeList):
     
     conductanceVals = []
-    
-    print clustering
     
     for i in clustering:
         #calculate the cutsize of the clustering to the rest of the graph 
