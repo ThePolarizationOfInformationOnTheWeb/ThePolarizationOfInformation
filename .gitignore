@@ -1,0 +1,9 @@
+*.xml
+*.iml
+*.DS_Store
+access_key.txt
+access_secret.txt
+consumer_key.txt
+consumer_secret.txt
+*.pyc
+*.csv
