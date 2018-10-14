@@ -1,5 +1,6 @@
 import tweepy
 import pandas as pd
+import datetime
 
 # write these in a config file: TODO
 features = ['user_id', 'username', 'text', 'friends']
@@ -26,6 +27,8 @@ class tweet_collector:
             self.tweets_df = pd.DataFrame(columns=features)
             self.tweets_df.index.name = 'tweet_id'
 
-    def collect_tweets(self, queries: list, options: list = None):
-        # TODO
+    def collect_tweets(self, queries: list, num_tweets: int = 50, since: datetime.date = None):
+
         return None
+
+
