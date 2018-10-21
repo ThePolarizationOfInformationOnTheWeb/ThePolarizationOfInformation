@@ -7,3 +7,4 @@ consumer_key.txt
 consumer_secret.txt
 *.pyc
 *.csv
+keys.csv

@@ -12,7 +12,7 @@ class TweetNetwork:
                                 index=self.tweets_df.index, columns=self.tweets_df.index)
 
     def build_and_write_network(self) -> None:
-        self._connect_followers_and_friends()
+        ##self._connect_followers_and_friends()
         self.adj.to_csv('{}_network.csv'.format(self.topic))
 
     def get_node_tweet_id_map(self) -> dict:
