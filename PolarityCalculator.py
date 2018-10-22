@@ -8,11 +8,11 @@ class PolarityCalculator:
         self.topic = topic
         self.back_path_clusterer = None
 
-    def cluster_backward_path(self):
+    def cluster_backward_path(self) -> None:
         self.back_path_clusterer = Clusterer(self.topic)
         self.back_path_clusterer.backward_path()
 
-    def conductance_calc(self, clustering_type: str = 'back_path'):
+    def conductance_calc(self, clustering_type: str = 'back_path') -> float:
         """
         Method for calculating the average conductance of the clustering
         :param clustering_type: the clustering we want to use for the conductance calculation
@@ -37,7 +37,9 @@ class PolarityCalculator:
         nx_graph = nx.DiGraph()
 
         for i in range(len(weighted_adj)):
-            nx_graph.add_edges_from([(i, j, {'capacity': weighted_adj[i][j]}) for j in range(len(weighted_adj[i])) if weighted_adj[i][j] != 0])
+            nx_graph.add_edges_from(
+                [(i, j, {'capacity': weighted_adj[i][j]}
+                  ) for j in range(len(weighted_adj[i])) if weighted_adj[i][j] != 0])
 
         node_list = nx_graph.nodes()
         capacity = nx.get_edge_attributes(nx_graph, 'capacity')

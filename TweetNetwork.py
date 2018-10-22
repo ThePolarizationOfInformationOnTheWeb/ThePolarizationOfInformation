@@ -13,6 +13,7 @@ class TweetNetwork:
 
     def build_and_write_network(self) -> None:
         ##self._connect_followers_and_friends()
+        self._connect_hashtags()
         self.adj.to_csv('{}_network.csv'.format(self.topic))
 
     def get_node_tweet_id_map(self) -> dict:
@@ -31,3 +32,12 @@ class TweetNetwork:
 
             self.adj.loc[:, idx] = self.adj.loc[:, idx] + followers_series
             self.adj.loc[:, idx] = self.adj.loc[:, idx] + friends_series
+
+    def _connect_hashtags(self) -> None:
+        all_hashtags =
+        for tweet_id in self.adj.index:
+            curr_hashtags_arr = np.fromstring(self.tweets_df.loc[tweet_id, 'hashtags'], sep=',')
+
+            curr_hashtags_series = pd.Series(1, index=hashtags_arr).reindex(all_hashtags, fill_value=0)
+
+
