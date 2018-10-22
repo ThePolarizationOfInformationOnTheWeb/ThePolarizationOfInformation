@@ -1,4 +1,5 @@
 import networkx as nx
+import numpy as np
 from Clusterer import Clusterer
 
 class PolarityCalculator:
@@ -25,22 +26,27 @@ class PolarityCalculator:
         clusterer = switch_clusterer(clustering_type)
 
         if clusterer is None:
-            print("PolarityCalculator: Clustering Not Implemented")
+            print("PolarityCalculator: Clustering Either Not Implemented or Fitted")
             return None
         else:
             weighted_adj = clusterer.get_weighted_adj()
-            clustering = clusterer.get_clustering()
+            weighted_adj = [(np.array(w) / sum(w)).tolist() for w in weighted_adj]
+            clustering = clusterer.get_clustering()[0]
 
         # generate networkx graph to obtain conductance values of clusterings after each critical time
-        nx_graph = nx.Graph()
+        nx_graph = nx.DiGraph()
 
         for i in range(len(weighted_adj)):
-            nx_graph.add_edges_from([(i, j, {'capacity': weighted_adj[i][j]}) for j in range(i, len(weighted_adj[i])) if weighted_adj[i][j] != 0])
+            nx_graph.add_edges_from([(i, j, {'capacity': weighted_adj[i][j]}) for j in range(len(weighted_adj[i])) if weighted_adj[i][j] != 0])
 
         node_list = nx_graph.nodes()
         capacity = nx.get_edge_attributes(nx_graph, 'capacity')
 
         conductance_values = []
+
+        if len(clustering) == 1:
+            # only 1 clustering for the entire, define conductance to be 0
+            return 0
 
         for i in clustering:
             # calculate the cutsize of the clustering to the rest of the graph
@@ -50,16 +56,22 @@ class PolarityCalculator:
             # calculate the volume of the community
             volume_i = 0
             for j in i:
-                volume_i += sum([capacity[]])
+                volume_i += sum([capacity[(j, k)] for k in nx_graph.neighbors(j)])
 
             # calculate the volume of the rest of the graph
+            not_i = list(set(nx_graph.nodes) - set(i))
             volume_not_i = 0
-            for k in i:
-                volume_not_i += nx_graph.degree(k)
+            for j in not_i:
+                volume_not_i += sum([capacity[(j, k)] for k in nx_graph.neighbors(j)])
+
+            if float(min(volume_not_i, volume_i)) == 0:
+                # i is a disconnected subgraph with no edges
+                conductance_values.append(1)
+                continue
 
             conductance_values.append((float(cut_size) / float(min(volume_not_i, volume_i))))
 
-        return sum(conductance_values) / len(conductance_values)
+        return min(conductance_values)
 
     # # calculate the size range of clusterings
     # # clustering - the list of communities found by the backward path algorithm

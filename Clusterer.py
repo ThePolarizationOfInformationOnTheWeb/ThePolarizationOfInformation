@@ -12,6 +12,7 @@ class Clusterer:
         self.node_id_map = dict(zip(network_df.index.tolist(), list(range(network_df.shape[0]))))
         self.clustering = None
         self.back_path_critical_times = None
+        self.back_path_critical_times = None
 
     def backward_path(self):
         TranList, TranCumul = transval(self.weighted_adj_matrix)
