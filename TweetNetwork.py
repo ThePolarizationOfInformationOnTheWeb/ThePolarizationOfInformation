@@ -34,10 +34,23 @@ class TweetNetwork:
             self.adj.loc[:, idx] = self.adj.loc[:, idx] + friends_series
 
     def _connect_hashtags(self) -> None:
-        all_hashtags =
-        for tweet_id in self.adj.index:
-            curr_hashtags_arr = np.fromstring(self.tweets_df.loc[tweet_id, 'hashtags'], sep=',')
 
-            curr_hashtags_series = pd.Series(1, index=hashtags_arr).reindex(all_hashtags, fill_value=0)
+        # 1st pass to create dictionary of hashtags
+        hashtags_by_user = {}
+        for tweet_id in self.adj.index:
+            hashtags_by_user[tweet_id] = np.fromstring(self.tweets_df.loc[tweet_id, 'hashtags'], sep=',')
+
+        def intersection_size(tweet_a, tweet_b):
+            if tweet_a == tweet_b:
+                return 0
+            else:
+                return np.intersect1d(hashtags_by_user[tweet_a], hashtags_by_user[tweet_b]).size
+
+        vectorized_intersection_size = np.vectorize(intersection_size)
+
+        # 2nd pass to create matrix adj s.t. entry aij = |hashtags of tweet i ∩ hashtags of tweet j|
+        for tweet_id in self.adj.index:
+            self.adj.loc[:, tweet_id] = self.adj.loc[:, tweet_id] + vectorized_intersection_size(
+                tweet_id, self.adj.loc[:, tweet_id])
 
 
