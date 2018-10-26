@@ -13,6 +13,7 @@ class TweetNetwork:
 
     def build_and_write_network(self) -> None:
         ##self._connect_followers_and_friends()
+        self._connect_hashtags()
         self.adj.to_csv('{}_network.csv'.format(self.topic))
 
     def get_node_tweet_id_map(self) -> dict:
@@ -31,3 +32,25 @@ class TweetNetwork:
 
             self.adj.loc[:, idx] = self.adj.loc[:, idx] + followers_series
             self.adj.loc[:, idx] = self.adj.loc[:, idx] + friends_series
+
+    def _connect_hashtags(self) -> None:
+
+        # 1st pass to create dictionary of hashtags
+        hashtags_by_user = {}
+        for tweet_id in self.adj.index:
+            hashtags_by_user[tweet_id] = np.array(self.tweets_df.loc[tweet_id, 'hashtags'].split(','))
+
+        def intersection_size(tweet_a, tweet_b):
+            if tweet_a == tweet_b:
+                return 0
+            else:
+                return np.intersect1d(hashtags_by_user[tweet_a], hashtags_by_user[tweet_b]).size
+
+        vectorized_intersection_size = np.vectorize(intersection_size)
+
+        # 2nd pass to create matrix adj s.t. entry aij = |hashtags of tweet i ∩ hashtags of tweet j|
+        for tweet_id in self.adj.index:
+            self.adj.loc[:, tweet_id] = self.adj.loc[:, tweet_id] + vectorized_intersection_size(
+                np.full((self.adj.shape[0], 1), tweet_id).flatten(), self.adj.index)
+
+
