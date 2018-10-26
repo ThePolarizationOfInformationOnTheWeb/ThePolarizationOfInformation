@@ -38,7 +38,7 @@ class TweetNetwork:
         # 1st pass to create dictionary of hashtags
         hashtags_by_user = {}
         for tweet_id in self.adj.index:
-            hashtags_by_user[tweet_id] = np.fromstring(self.tweets_df.loc[tweet_id, 'hashtags'], sep=',')
+            hashtags_by_user[tweet_id] = np.array(self.tweets_df.loc[tweet_id, 'hashtags'].split(','))
 
         def intersection_size(tweet_a, tweet_b):
             if tweet_a == tweet_b:
@@ -51,6 +51,6 @@ class TweetNetwork:
         # 2nd pass to create matrix adj s.t. entry aij = |hashtags of tweet i ∩ hashtags of tweet j|
         for tweet_id in self.adj.index:
             self.adj.loc[:, tweet_id] = self.adj.loc[:, tweet_id] + vectorized_intersection_size(
-                tweet_id, self.adj.loc[:, tweet_id])
+                np.full((self.adj.shape[0], 1), tweet_id).flatten(), self.adj.index)
 
 
