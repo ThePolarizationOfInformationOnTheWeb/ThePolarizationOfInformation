@@ -3,15 +3,11 @@ import datetime
 from searchtweets import gen_rule_payload, load_credentials, collect_results
 
 
-class tweet_collector:
+class TweetCollector:
 
-    def __init__(self, topic: str, path_to_keys: str = './keys.csv'):
-        # # set up access to API
-
-        self.premium_search_args = load_credentials("./twitter_keys.yaml",
-                                               yaml_key="search_tweets_premium",
-                                               env_overwrite=False)
-
+    def __init__(self, topic: str, path_to_keys: str = './twitter_keys.yaml'):
+        # set up access to API
+        self.premium_search_args = load_credentials(path_to_keys, yaml_key="search_tweets_premium", env_overwrite=False)
         self.topic = topic
 
         # open topic_tweets.csv file that we will be modifying
@@ -23,9 +19,10 @@ class tweet_collector:
             self.tweets_df = pd.DataFrame()
 
     def collect_and_write_tweets(self, query: str, results_per_call: int = 100, num_tweets: int = 100,
-                       from_date: datetime.date = None, to_date: datetime.date = None):
+                                 from_date: datetime.date = None, to_date: datetime.date = None):
         """
-        :param queries:
+        :param query:
+        :param results_per_call
         :param num_tweets:
         :param from_date:
         :param to_date:
