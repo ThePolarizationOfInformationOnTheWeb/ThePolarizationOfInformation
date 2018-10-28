@@ -8,3 +8,4 @@ consumer_secret.txt
 *.pyc
 *.csv
 keys.csv
+twitter_keys.yaml
