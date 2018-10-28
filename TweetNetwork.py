@@ -6,7 +6,7 @@ class TweetNetwork:
 
     def __init__(self, topic: str):
         self.topic = topic
-        self.tweets_df = pd.read_csv("{}_tweets.csv".format(topic), index_col='tweet_id')
+        self.tweets_df = pd.read_csv("{}_tweets.csv".format(topic), index_col='id')
         self.node_tweet_id_map = dict(enumerate(self.tweets_df.index))
         self.adj = pd.DataFrame(np.zeros((self.tweets_df.shape[0], self.tweets_df.shape[0])),
                                 index=self.tweets_df.index, columns=self.tweets_df.index)
@@ -34,11 +34,17 @@ class TweetNetwork:
             self.adj.loc[:, idx] = self.adj.loc[:, idx] + friends_series
 
     def _connect_hashtags(self) -> None:
+        """
+        helper method for build_and_write_network(). adds edges based on the number of similar hashtags shared by two
+        tweets
+        :return:
+        """
 
         # 1st pass to create dictionary of hashtags
         hashtags_by_user = {}
         for tweet_id in self.adj.index:
-            hashtags_by_user[tweet_id] = np.array(self.tweets_df.loc[tweet_id, 'hashtags'].split(','))
+            hashtags_by_user[tweet_id] = np.array([h['text']
+                                                   for h in eval(self.tweets_df.loc[tweet_id, 'entities'])['hashtags']])
 
         def intersection_size(tweet_a, tweet_b):
             if tweet_a == tweet_b:
