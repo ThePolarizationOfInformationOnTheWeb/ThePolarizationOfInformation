@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import textblob
 
 
 class TweetNetwork:
@@ -32,6 +33,13 @@ class TweetNetwork:
 
             self.adj.loc[:, idx] = self.adj.loc[:, idx] + followers_series
             self.adj.loc[:, idx] = self.adj.loc[:, idx] + friends_series
+
+    def _connect_sentiment(self) -> None:
+        """
+        Helper method for build_and_write_network(). Adds edges based on how similar their sentiment is
+        :return:
+        """
+
 
     def _connect_hashtags(self) -> None:
         """
