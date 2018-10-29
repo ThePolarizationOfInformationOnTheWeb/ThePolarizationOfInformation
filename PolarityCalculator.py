@@ -2,6 +2,7 @@ import networkx as nx
 import numpy as np
 from Clusterer import Clusterer
 
+
 class PolarityCalculator:
 
     def __init__(self, topic: str):

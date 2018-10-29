@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from textblob import TextBlob
 from scipy import spatial
 
 
@@ -15,14 +16,15 @@ class TweetNetwork:
 
     def build_and_write_network(self) -> None:
         # self._connect_followers_and_friends()
-        hashtag_data_frame = self._generate_hashtag_data_frame()
-        self.tweet_feature_matrix = pd.concat([hashtag_data_frame], axis=1)
+        hashtag_dataframe = self._generate_hashtag_data_frame()
+        sentiment_dataframe = self._generate_sentiment_data_frame()
+        self.tweet_feature_matrix = pd.concat([sentiment_dataframe, hashtag_dataframe], axis=1)
         self._calc_cosine_similarity()
         self.adj.to_csv('{}_network.csv'.format(self.topic))
 
     def _calc_cosine_similarity(self) -> None:
         """
-        Calculates the cosine similarity between two tweets in the matrix
+        Calculates the cosine similarity between two tweets in the matrix.
         :return: None
         """
 
@@ -37,7 +39,6 @@ class TweetNetwork:
                 self.adj.loc[tweet_id_j, tweet_id_i] = self.adj.loc[tweet_id_i, tweet_id_j]
 
         self.adj = self.adj.fillna(0)
-
 
     def get_node_tweet_id_map(self) -> dict:
         return self.node_tweet_id_map
@@ -56,6 +57,22 @@ class TweetNetwork:
             self.adj.loc[:, idx] = self.adj.loc[:, idx] + followers_series
             self.adj.loc[:, idx] = self.adj.loc[:, idx] + friends_series
 
+    def _generate_sentiment_data_frame(self) -> pd.DataFrame:
+        """
+        Helper method for build_and_write_network(). Adds edges based on how similar their sentiment is
+        :return:
+        """
+        sentiment_dataframe = pd.DataFrame(np.zeros((self.tweets_df.shape[0], 1)), index=self.tweets_df.index,
+                                           columns=['sentiment'])
+
+        def calc_sentiment(tweet_text):
+            tweet_text_blob = TextBlob(tweet_text)
+            return tweet_text_blob.sentiment.polarity + 1
+
+        sentiment_dataframe.loc[:, 'sentiment'] = self.tweets_df.loc[:, 'text'].apply(calc_sentiment)
+
+        return sentiment_dataframe
+
     def _generate_hashtag_data_frame(self) -> pd.DataFrame:
         """
         helper method for build_and_write_network(). adds edges based on the number of similar hashtags shared by two
@@ -63,7 +80,7 @@ class TweetNetwork:
         :return:
         """
 
-        # 1st pass to create dictionary of hashtags
+        # create dictionary of hashtags
         hashtags_by_user = {}
         for tweet_id in self.adj.index:
             hashtags_by_user[tweet_id] = np.array([h['text']
