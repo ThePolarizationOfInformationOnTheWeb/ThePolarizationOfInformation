@@ -2,3 +2,4 @@ pandas          # data wrangling
 numpy           # numpy
 searchtweets    # python wrapper for twitter api
 textblob        # NLP
+scipy           # scientific python
