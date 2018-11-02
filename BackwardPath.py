@@ -16,6 +16,8 @@ def transval(adj):
         TranList.append([z for z in range(len(adj)) if adj[v][z] != 0])
         TranProb.append([adj[v][z] / float(qq) for z in range(len(adj)) if adj[v][z] != 0])
 
+    # TODO: If TranList[i] is empty then create self loop edge with transition probability 1, i.e. node is disconnected.
+
     TranCumul = [list(list_incr(TranProb[v])) for v in range(len(adj))]
 
     return couple(TranList, TranCumul)
@@ -275,9 +277,9 @@ def back_path_clustering(adj, TranList, TranCumul):
         if interval - critical_times[-1] >= 100 or user_coal_index:
             flag = 1
 
-    # TODO: return single "best" clustering
+    # TODO: return single "best" clustering. For now return first...
 
-    return clusterings, critical_times
+    return clusterings[0], critical_times
 
 
 # Given number of nodes, adjacency matrix, and clustering, return edit cost
