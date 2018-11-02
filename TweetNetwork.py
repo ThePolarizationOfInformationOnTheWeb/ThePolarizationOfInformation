@@ -67,9 +67,26 @@ class TweetNetwork:
 
         def calc_sentiment(tweet_text):
             tweet_text_blob = TextBlob(tweet_text)
-            return tweet_text_blob.sentiment.polarity + 1
+            return tweet_text_blob.sentiment.polarity
 
         sentiment_dataframe.loc[:, 'sentiment'] = self.tweets_df.loc[:, 'text'].apply(calc_sentiment)
+
+        negative_sentiment_df = sentiment_dataframe[sentiment_dataframe.loc[:, 'sentiment'] < 0].reindex(
+            sentiment_dataframe.index, fill_value=0)
+
+        negative_sentiment_df.columns = ['negative_sentiment']
+
+        negative_sentiment_df.loc[:, 'negative_sentiment'] = negative_sentiment_df.loc[:, 'negative_sentiment'].abs()
+
+        positive_sentiment_df = sentiment_dataframe[sentiment_dataframe.loc[:, 'sentiment'] > 0].reindex(
+            sentiment_dataframe.index, fill_value=0)
+
+        positive_sentiment_df.columns = ['positive_sentiment']
+
+        negative_sentiment_df[sentiment_dataframe.loc[:, 'sentiment'] == 0] = 0.25
+        positive_sentiment_df[sentiment_dataframe.loc[:, 'sentiment'] == 0] = 0.25
+
+        sentiment_dataframe = pd.concat([negative_sentiment_df, positive_sentiment_df], join='outer', axis='columns')
 
         return sentiment_dataframe
 
