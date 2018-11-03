@@ -87,8 +87,8 @@ class TweetNetwork:
             for tweet_id_j in self.tweets_df.index:
                 if tweet_id_i != tweet_id_j:
                     self.tweet_sentiment_adj.loc[tweet_id_i, tweet_id_j] = math.e ** (
-                            (-2) * (np.abs(sentiment_dataframe.loc[tweet_id_i, 'sentiment']
-                                           - sentiment_dataframe.loc[tweet_id_j, 'sentiment'])))
+                            (-2) * ((sentiment_dataframe.loc[tweet_id_i, 'sentiment']
+                                     - sentiment_dataframe.loc[tweet_id_j, 'sentiment']) ** 2))
 
 
         # negative_sentiment_df = sentiment_dataframe[sentiment_dataframe.loc[:, 'sentiment'] < 0].reindex(
