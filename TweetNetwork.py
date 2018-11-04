@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import math
+import re
 from textblob import TextBlob
 from scipy import spatial
 
@@ -15,18 +16,20 @@ class TweetNetwork:
         self.tweet_binary_feature_matrix = pd.DataFrame(index=self.tweets_df.index)
         self.tweet_sentiment_adj = None
 
-    def build_and_write_network(self) -> None:
+    def build_and_write_network(self, ideal_radians_from_sentiment: float = math.pi / 4) -> None:
         # self._connect_followers_and_friends()
         hashtag_df = self._generate_hashtag_data_frame()
         mentions_df = self._generate_mentions_data_frame()
         self._generate_sentiment_data_frame()
         self.tweet_binary_feature_matrix = pd.concat([hashtag_df, mentions_df], axis=1)
-        self._calc_similarity()
+        self._calc_similarity(ideal_radians_from_sentiment=ideal_radians_from_sentiment)
         self.adj.to_csv('{}_network.csv'.format(self.topic))
 
-    def _calc_similarity(self) -> None:
+    def _calc_similarity(self, ideal_radians_from_sentiment: float = math.pi / 4) -> None:
         """
         Calculates the cosine similarity between two tweets in the matrix.
+        :param ideal_radians_from_sentiment: between -pi / 4 to 3pi/4, pi/4 is the vector [1,1], i.e.
+                                             equal weight to both binary and sentiment
         :return: None
         """
 
@@ -47,8 +50,13 @@ class TweetNetwork:
         binary_feature_adj = binary_feature_adj.fillna(0)
 
         # Calculate the projection of the Binary feature similarity and the sentiment similarity of two tweets onto the
-        # ideal, i.e. add the two up and divide by sqrt(2)
-        self.adj = (binary_feature_adj + self.tweet_sentiment_adj) / (2 ** 0.5)
+        # ideal
+        magnitude = ((math.sqrt(2) * math.cos(ideal_radians_from_sentiment) + 0.5) ** 2 +
+                     (math.sqrt(2) * math.sin(ideal_radians_from_sentiment) + 0.5) ** 2) ** 1/2
+        sentiment_coeff = magnitude * math.cos(ideal_radians_from_sentiment)
+        binary_coeff = magnitude * math.sin(ideal_radians_from_sentiment)
+
+        self.adj = (binary_coeff * binary_feature_adj + sentiment_coeff * self.tweet_sentiment_adj) / magnitude
 
     def get_node_tweet_id_map(self) -> dict:
         return self.node_tweet_id_map
@@ -147,6 +155,10 @@ class TweetNetwork:
         for tweet_id in self.tweets_df.index:
             hashtags_by_user[tweet_id] = np.array([h['text']
                                                    for h in eval(self.tweets_df.loc[tweet_id, 'entities'])['hashtags']])
+            description = eval(self.tweets_df.loc[tweet_id, 'user'])['description']
+            if description is not None:
+                hashtags_by_user[tweet_id] = np.append(hashtags_by_user[tweet_id], re.findall(r"#(\w+)",
+                                                                                              description))
 
         hashtag_list = list(set(list(np.concatenate(list(hashtags_by_user.values())))))
 
