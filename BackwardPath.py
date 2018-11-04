@@ -280,15 +280,3 @@ def back_path_clustering(adj, TranList, TranCumul):
     # TODO: return single "best" clustering. For now return first...
 
     return clusterings[0], critical_times
-
-
-# Given number of nodes, adjacency matrix, and clustering, return edit cost
-def cluster_cost(adj: list, cluster: list):
-    num_nodes = len(adj)
-    induced_graph = np.zeros((num_nodes, num_nodes))
-    for w in cluster:
-        if len(w) > 1:
-            for e in itertools.combinations(w, 2):
-                induced_graph[e[0], e[1]] = 1
-                induced_graph[e[1], e[0]] = 1
-    return 0.5 * (np.sum(np.not_equal(adj, induced_graph)))

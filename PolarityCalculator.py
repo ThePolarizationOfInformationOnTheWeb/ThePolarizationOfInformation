@@ -49,7 +49,7 @@ class PolarityCalculator:
 
         if len(clustering) == 1:
             # only 1 clustering for the entire, define conductance to be 0
-            return 0
+            return 1
 
         for i in clustering:
             # calculate the cutsize of the clustering to the rest of the graph
