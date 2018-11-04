@@ -18,8 +18,9 @@ class TweetNetwork:
     def build_and_write_network(self) -> None:
         # self._connect_followers_and_friends()
         hashtag_df = self._generate_hashtag_data_frame()
+        mentions_df = self._generate_mentions_data_frame()
         self._generate_sentiment_data_frame()
-        self.tweet_binary_feature_matrix = pd.concat([hashtag_df], axis=1)
+        self.tweet_binary_feature_matrix = pd.concat([hashtag_df, mentions_df], axis=1)
         self._calc_similarity()
         self.adj.to_csv('{}_network.csv'.format(self.topic))
 
@@ -54,6 +55,31 @@ class TweetNetwork:
 
     def get_adj_list(self):
         return self.adj.values.tolist()
+
+    def _generate_mentions_data_frame(self) -> pd.DataFrame:
+        """
+        helper method for build_and_write_network().
+        :return: hashtag_dataframe: pandas DataFrame where entry m_ij = 1 of tweet_i contains mention_j
+        """
+
+        # create dictionary of mentions
+        mentions_by_user = {}
+        for tweet_id in self.tweets_df.index:
+            mentions_by_user[tweet_id] = np.array([h['screen_name']
+                                                   for h in eval(self.tweets_df.loc[tweet_id, 'entities'])
+                                                   ['user_mentions']])
+
+        mentions_list = list(set(list(np.concatenate(list(mentions_by_user.values())))))
+
+        mentions_dataframe = pd.DataFrame(np.zeros((self.tweets_df.shape[0], len(mentions_list))),
+                                          index=self.tweets_df.index, columns=mentions_list)
+
+        for tweet_id in self.tweets_df.index:
+            mentions_arr = np.array(mentions_by_user[tweet_id])
+            mentions_series = pd.Series(1, index=mentions_arr).reindex(mentions_list, fill_value=0)
+            mentions_dataframe.loc[tweet_id, :] = mentions_series
+
+        return mentions_dataframe
 
     def _connect_followers_and_friends(self) -> None:
         for idx in self.tweets_df.index:
@@ -112,9 +138,8 @@ class TweetNetwork:
 
     def _generate_hashtag_data_frame(self) -> pd.DataFrame:
         """
-        helper method for build_and_write_network(). adds edges based on the number of similar hashtags shared by two
-        tweets
-        :return:
+        helper method for build_and_write_network().
+        :return: hashtag_dataframe: pandas DataFrame where entry h_ij = 1 of tweet_i contains hashtag_j
         """
 
         # create dictionary of hashtags
