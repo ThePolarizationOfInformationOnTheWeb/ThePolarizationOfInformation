@@ -8,19 +8,22 @@ from operator import itemgetter
 
 
 def transval(adj):
-    TranList = []
-    TranProb = []
+    tran_list = []
+    tran_prob = []
+    
+    # add self loop to adj if the node is isolated
+    for i in range(len(adj)):
+        if sum(adj[i]) == 0:
+            adj[i][i] = 1
 
     for v in range(len(adj)):
         qq = sum(adj[v])  # sum of the row
-        TranList.append([z for z in range(len(adj)) if adj[v][z] != 0])
-        TranProb.append([adj[v][z] / float(qq) for z in range(len(adj)) if adj[v][z] != 0])
+        tran_list.append([z for z in range(len(adj)) if adj[v][z] != 0])
+        tran_prob.append([adj[v][z] / float(qq) for z in range(len(adj)) if adj[v][z] != 0])
 
-    # TODO: If TranList[i] is empty then create self loop edge with transition probability 1, i.e. node is disconnected.
+    tran_cumul = [list(list_incr(tran_prob[v])) for v in range(len(adj))]
 
-    TranCumul = [list(list_incr(TranProb[v])) for v in range(len(adj))]
-
-    return couple(TranList, TranCumul)
+    return couple(tran_list, tran_cumul)
 
 
 def couple(TranList, TranCumul):
