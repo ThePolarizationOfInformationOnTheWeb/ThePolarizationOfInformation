@@ -11,19 +11,48 @@ class TweetNetwork:
     def __init__(self, topic: str):
         self.topic = topic
         self.tweets_df = pd.read_csv("{}_tweets.csv".format(self.topic), index_col='id')
+        self.hashtag_sentiments_df = pd.read_csv("{}_hashtag_sentiments.csv".format(self.topic), index_col='hashtag')
         self.node_tweet_id_map = dict(enumerate(self.tweets_df.index))
         self.adj = None
         self.tweet_binary_feature_matrix = pd.DataFrame(index=self.tweets_df.index)
         self.tweet_sentiment_adj = None
 
-    def build_and_write_network(self, ideal_radians_from_sentiment: float = math.pi / 4) -> None:
-        # self._connect_followers_and_friends()
-        hashtag_df = self._generate_hashtag_data_frame()
-        mentions_df = self._generate_mentions_data_frame()
-        self._generate_sentiment_data_frame()
-        self.tweet_binary_feature_matrix = pd.concat([hashtag_df, mentions_df], axis=1)
-        self._calc_similarity(ideal_radians_from_sentiment=ideal_radians_from_sentiment)
-        self.adj.to_csv('{}_network.csv'.format(self.topic))
+    def build_and_write_network(self, method: str = 'kmeans_update', ideal_radians_from_sentiment: float = math.pi / 4) -> None:
+        """
+        builds and writes network of weighted edges to <topic>_network.csv file
+        :param method: 'kmeans_update' for dynamic weighting of edges using the weighted kmeans update
+                        'binary_and_sentiment' for considering a single pass considering only binary features and
+                        sentiment
+        :param ideal_radians_from_sentiment: for 'binary_and_sentiment' method
+        :return:
+        """
+        if method == 'kmeans_update':
+            try:
+                self.hashtag_sentiments_df = pd.read_csv("{}_hashtag_sentiments.csv".format(self.topic),
+                                                         index_col='hashtag')
+                if self.hashtag_sentiments_df['sentiment'].isnull().sum() > 0:
+                    print("{}_hashtag_sentiments.csv exists but is not completely filled yet".format(self.topic))
+                    exit(code=-1)
+
+
+
+            except FileNotFoundError:
+                print("{}_hashtag_sentiments.csv does not exist.".format(self.topic))
+                print("Use hashtag_sentiment.py script to generate empty {}_hashtag_sentiments.csv file and then "
+                      "manually label hashtags using excel or whatever editor you like most, "
+                      "and... good luck".format(self.topic))
+
+        elif method == 'binary_and_sentiment':
+            # self._connect_followers_and_friends()
+            hashtag_df = self._generate_hashtag_data_frame()
+            mentions_df = self._generate_mentions_data_frame()
+            self._generate_sentiment_data_frame()
+            self.tweet_binary_feature_matrix = pd.concat([hashtag_df, mentions_df], axis=1)
+            self._calc_similarity(ideal_radians_from_sentiment=ideal_radians_from_sentiment)
+            self.adj.to_csv('{}_network.csv'.format(self.topic))
+
+        else:
+            print('Method {} not implemented'.format(method))
 
     def _calc_similarity(self, ideal_radians_from_sentiment: float = math.pi / 4) -> None:
         """
