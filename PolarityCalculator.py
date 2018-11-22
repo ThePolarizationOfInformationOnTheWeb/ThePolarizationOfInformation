@@ -1,5 +1,4 @@
 import networkx as nx
-import numpy as np
 from Clusterer import Clusterer
 
 
@@ -31,7 +30,7 @@ class PolarityCalculator:
             return None
         else:
             weighted_adj = clusterer.get_weighted_adj()
-            #weighted_adj = [(np.array(w) / sum(w)).tolist() for w in weighted_adj]
+            # weighted_adj = [(np.array(w) / sum(w)).tolist() for w in weighted_adj]
             clustering = clusterer.get_clustering()
 
         # generate networkx graph to obtain conductance values of clusterings after each critical time
@@ -42,13 +41,12 @@ class PolarityCalculator:
                 [(i, j, {'capacity': weighted_adj[i][j]}
                   ) for j in range(len(weighted_adj[i])) if weighted_adj[i][j] != 0])
 
-        node_list = nx_graph.nodes()
         capacity = nx.get_edge_attributes(nx_graph, 'capacity')
 
         conductance_values = []
 
         if len(clustering) == 1:
-            # only 1 clustering for the entire, define conductance to be 0
+            # only 1 clustering for the entire, define conductance to be 1
             return 1
 
         for i in clustering:
@@ -75,29 +73,3 @@ class PolarityCalculator:
             conductance_values.append((float(cut_size) / float(min(volume_not_i, volume_i))))
 
         return min(conductance_values)
-
-    # # calculate the size range of clusterings
-    # # clustering - the list of communities found by the backward path algorithm
-    # def cluster_size_range(clustering):
-    #     low = len(clustering[0])  # smallest cluster size intialization
-    #     high = low  # greatest cluster size initialization
-    #
-    #     for i in clustering:
-    #         # compare low and high to size of i and update low and high appropriately
-    #         if low > len(i):
-    #             low = len(i)
-    #
-    #         if high < len(i):
-    #             high = len(i)
-    #
-    #     return high - low
-    #
-    # # calculate the size median of clusterings
-    # # clustering - the list of communities found by the backward path algorithm
-    # def cluster_size_median(clustering):
-    #     size_list = []  # list of community sizes
-    #
-    #     for i in clustering:
-    #         size_list.append(len(i))
-    #
-    #     return np.median(np.array(size_list))
