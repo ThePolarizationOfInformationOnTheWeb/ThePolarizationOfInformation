@@ -17,6 +17,7 @@ class TweetFeatureExtractor:
         self.sentiment_dataframe = None
         self.hashtag_dataframe = None
         self.tweet_sentiment_adj = None
+        self.hashtag_sentiment_dataframe = None
 
     def _generate_mentions_dataframe(self):
         """
@@ -111,3 +112,12 @@ class TweetFeatureExtractor:
             self._generate_hashtag_dataframe()
 
         return self.hashtag_dataframe
+
+    def get_hashtag_sentiment_dataframe(self) -> pd.DataFrame:
+        if self.hashtag_sentiment_dataframe is None:
+            self.hashtag_sentiment_dataframe = pd.read_csv('{}_hashtag_sentiments.csv'.format(self.topic),
+                                                           index_col='hashtag')
+            self.hashtag_sentiment_dataframe['polarity'] = (self.get_hashtag_sentiment_dataframe['right']
+                                                            - self.hashtag_sentiment_dataframe['left'])
+        return self.hashtag_sentiment_dataframe[['polarity']]
+

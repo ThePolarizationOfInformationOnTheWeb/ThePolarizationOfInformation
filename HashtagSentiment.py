@@ -18,6 +18,7 @@ def main():
     feature_extractor = TweetFeatureExtractor(sys.argv[1])
     hashtag_df = pd.DataFrame(index=feature_extractor.get_hashtag_dataframe().columns,
                               columns=['left', 'right'])
+    hashtag_df.index.name = 'hashtag'
     hashtag_df.to_csv('{}_hashtag_sentiments.csv'.format(sys.argv[1]))
 
 

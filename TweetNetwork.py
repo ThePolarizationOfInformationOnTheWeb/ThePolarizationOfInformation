@@ -18,7 +18,8 @@ class TweetNetwork:
         self.tweet_binary_feature_matrix = pd.DataFrame(index=self.tweets_df.index)
         self.tweet_sentiment_adj = None
 
-    def build_and_write_network(self, method: str = 'kmeans_update', ideal_radians_from_sentiment: float = math.pi / 4) -> None:
+    def build_and_write_network(self, method: str = 'kmeans_update',
+                                ideal_radians_from_sentiment: float = math.pi / 4) -> None:
         """
         builds and writes network of weighted edges to <topic>_network.csv file
         :param method: 'kmeans_update' for dynamic weighting of edges using the weighted kmeans update

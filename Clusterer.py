@@ -44,12 +44,33 @@ class Clusterer:
 
         elif method == 'coarsest':
             hashtag_df = self.feature_extractor.get_hashtag_dataframe()
-            hashtag_sets = pd.Series(name='hashtags')
+            hashtag_sentiment_df = self.feature_extractor.get_hashtag_sentiment_dataframe()
+
+            def contrasting_sentiment(h_tag_list):
+                """
+                Helper for apply() method
+                :param h_tag_list:
+                :return: Boolean indicating if there are contrasting polarity hashtags in the h_tag list
+                """
+                return np.diff(np.signbit(hashtag_sentiment_df.loc[h_tag_list, 'polarity'].values[
+                                              hashtag_sentiment_df.loc[h_tag_list, 'polarity'].values.nonzero()])
+                               ).sum() != 0
+
             for i in np.arange(len(self.clusterings) - 1, -1, -1):
+                hashtag_sets = pd.Series(name='hashtags', data=np.NaN, index=np.arange(len(self.clusterings[i])))
                 for j in range(len(self.clusterings[i])):
-                    #hashtag sets is a series holding the sets of all hashtags for each group
-                    hashtag_sets[i] = hashtag_df.columns[
+                    # hashtag_sets is a series holding the sets of all hashtags for each group
+                    hashtag_sets[j] = hashtag_df.columns[
                         hashtag_df.loc[self.node_id_map[self.clusterings[i][j]].values, :].any(axis='rows')].values
+
+                if not np.any(hashtag_sets.apply(contrasting_sentiment).values):
+                    return self.clusterings[i]
+
+            print("Couldn't find a coarse clustering without contrasting sentiments within the same cluster. Returning "
+                  "the first clustering")
+            return self.clusterings[0]
+
+
 
 
 
