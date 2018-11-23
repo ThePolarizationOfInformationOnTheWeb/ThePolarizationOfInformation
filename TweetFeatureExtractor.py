@@ -9,7 +9,10 @@ class TweetFeatureExtractor:
 
     def __init__(self, topic: str):
         self.topic = topic
-        self.tweets_df = pd.read_csv("{}_tweets.csv".format(self.topic), index_col='id')
+        try:
+            self.tweets_df = pd.read_csv("{}_tweets.csv".format(self.topic), index_col='id')
+        except FileNotFoundError:
+            print("File: {}_tweets.csv was not found. Use TweetCollector to generate this file".format(self.topic))
         self.mentions_dataframe = None
         self.sentiment_dataframe = None
         self.hashtag_dataframe = None
@@ -76,23 +79,25 @@ class TweetFeatureExtractor:
     def _generate_hashtag_dataframe(self) -> None:
         """
         helper method for build_and_write_network().
-        :return: hashtag_dataframe: pandas DataFrame where entry h_ij = 1 of tweet_i contains hashtag_j
+        :return: hashtag_dataframe: pandas DataFrame where entry h_ij = 1 if tweet_i contains hashtag_j
         """
 
         # create dictionary of hashtags
         hashtags_by_user = {}
         for tweet_id in self.tweets_df.index:
-            hashtags_by_user[tweet_id] = np.array([h['text']
-                                                   for h in eval(self.tweets_df.loc[tweet_id, 'entities'])['hashtags']])
+            hashtags_by_user[tweet_id] = [h_tag.lower() for h_tag in
+                                          np.array([h['text'] for h in eval(self.tweets_df.loc[tweet_id, 'entities'])
+                                                   ['hashtags']])]
             description = eval(self.tweets_df.loc[tweet_id, 'user'])['description']
             if description is not None:
-                hashtags_by_user[tweet_id] = np.append(hashtags_by_user[tweet_id], re.findall(r"#(\w+)",
-                                                                                              description))
+                hashtags_by_user[tweet_id] = np.append(hashtags_by_user[tweet_id], [h_tag.lower() for h_tag in
+                                                                                    re.findall(r"#(\w+)",
+                                                                                               description)])
 
         hashtag_list = list(set(list(np.concatenate(list(hashtags_by_user.values())))))
 
         self.hashtag_dataframe = pd.DataFrame(np.zeros((self.tweets_df.shape[0], len(hashtag_list))),
-                                      index=self.tweets_df.index, columns=hashtag_list)
+                                              index=self.tweets_df.index, columns=hashtag_list)
 
         for tweet_id in self.tweets_df.index:
             hashtag_arr = np.array(hashtags_by_user[tweet_id])

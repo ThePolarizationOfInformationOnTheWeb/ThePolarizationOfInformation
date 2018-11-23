@@ -31,7 +31,7 @@ class PolarityCalculator:
         else:
             weighted_adj = clusterer.get_weighted_adj()
             # weighted_adj = [(np.array(w) / sum(w)).tolist() for w in weighted_adj]
-            clustering = clusterer.get_clustering()
+            clustering = clusterer.get_clustering(method = 'coarsest')
 
         # generate networkx graph to obtain conductance values of clusterings after each critical time
         nx_graph = nx.DiGraph()
