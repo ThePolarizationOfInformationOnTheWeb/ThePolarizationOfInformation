@@ -85,25 +85,36 @@ class TweetFeatureExtractor:
         :return: hashtag_dataframe: pandas DataFrame where entry h_ij = 1 if tweet_i contains hashtag_j
         """
 
+        no_hashtag = 0
+
         # create dictionary of hashtags
-        hashtags_by_user = {}
+        hashtags_by_tweet = {}
         for tweet_id in self.tweets_df.index:
-            hashtags_by_user[tweet_id] = [h_tag.lower() for h_tag in
-                                          np.array([h['text'] for h in eval(self.tweets_df.loc[tweet_id, 'entities'])
-                                                   ['hashtags']])]
+            # hastags from tweet text
+            hashtags_by_tweet[tweet_id] = [h_tag.lower() for h_tag in np.array([h['text'] for h in eval(
+                self.tweets_df.loc[tweet_id, 'entities'])['hashtags']])]
+
+            # hashtags from user descriptions
             description = eval(self.tweets_df.loc[tweet_id, 'user'])['description']
             if description is not None:
-                hashtags_by_user[tweet_id] = np.append(hashtags_by_user[tweet_id], [h_tag.lower() for h_tag in
-                                                                                    re.findall(r"#(\w+)",
-                                                                                               description)])
+                hashtags_by_tweet[tweet_id] = np.append(
+                    hashtags_by_tweet[tweet_id], [h_tag.lower() for h_tag in re.findall(r"#(\w+)", description)])
 
-        hashtag_list = list(set(list(np.concatenate(list(hashtags_by_user.values())))))
+            # ensure no duplicates for each tweet
+            hashtags_by_tweet[tweet_id] = list(set(hashtags_by_tweet[tweet_id]))
+            if len(hashtags_by_tweet[tweet_id]) == 0:
+                no_hashtag = no_hashtag + 1
+
+        print("Number of tweets without hashtags: {}".format(no_hashtag))
+        print("Number of tweets: {}".format(len(hashtags_by_tweet)))
+
+        hashtag_list = list(set(list(np.concatenate(list(hashtags_by_tweet.values())))))
 
         self.hashtag_dataframe = pd.DataFrame(np.zeros((self.tweets_df.shape[0], len(hashtag_list))),
                                               index=self.tweets_df.index, columns=hashtag_list)
 
         for tweet_id in self.tweets_df.index:
-            hashtag_arr = np.array(hashtags_by_user[tweet_id])
+            hashtag_arr = np.array(hashtags_by_tweet[tweet_id])
             hashtag_series = pd.Series(1, index=hashtag_arr).reindex(hashtag_list, fill_value=0)
             self.hashtag_dataframe.loc[tweet_id, :] = hashtag_series
 
