@@ -1,8 +1,9 @@
 import pandas as pd
 import numpy as np
 import math
-import re
-from textblob import TextBlob
+import sys
+from Clusterer import Clusterer
+from TweetFeatureExtractor import TweetFeatureExtractor
 from scipy import spatial
 
 
@@ -11,19 +12,97 @@ class TweetNetwork:
     def __init__(self, topic: str):
         self.topic = topic
         self.tweets_df = pd.read_csv("{}_tweets.csv".format(self.topic), index_col='id')
-        self.node_tweet_id_map = dict(enumerate(self.tweets_df.index))
-        self.adj = None
+        self.feature_extractor = TweetFeatureExtractor(self.topic)
+        self.node_id_map = pd.Series(dict(zip(list(range(self.tweets_df.shape[0])), self.tweets_df.index.tolist())))
+        self.clusterer = None
+        self.hashtag_sentiments_df = None
+        self.adj = pd.DataFrame(index=self.tweets_df.index, columns=self.tweets_df.index)
         self.tweet_binary_feature_matrix = pd.DataFrame(index=self.tweets_df.index)
         self.tweet_sentiment_adj = None
 
-    def build_and_write_network(self, ideal_radians_from_sentiment: float = math.pi / 4) -> None:
-        # self._connect_followers_and_friends()
-        hashtag_df = self._generate_hashtag_data_frame()
-        mentions_df = self._generate_mentions_data_frame()
-        self._generate_sentiment_data_frame()
-        self.tweet_binary_feature_matrix = pd.concat([hashtag_df, mentions_df], axis=1)
-        self._calc_similarity(ideal_radians_from_sentiment=ideal_radians_from_sentiment)
-        self.adj.to_csv('{}_network.csv'.format(self.topic))
+    def build_and_write_network(self, method: str = 'kmeans_update',
+                                ideal_radians_from_sentiment: float = math.pi / 4) -> None:
+        """
+        builds and writes network of weighted edges to <topic>_network.csv file
+        :param method: 'kmeans_update' for dynamic weighting of edges using the weighted kmeans update
+                        'binary_and_sentiment' for considering a single pass considering only binary features and
+                        sentiment
+        :param ideal_radians_from_sentiment: for 'binary_and_sentiment' method
+        :return:
+        """
+        if method == 'kmeans_update':
+
+            iteration_count = 1
+
+            tweet_cluster_assignment_df = pd.DataFrame(index=self.tweets_df.index)
+            tweet_cluster_assignment_df['cluster_0'] = list(range(self.tweets_df.shape[0]))
+
+            # initially every node is in its own cluster
+            clustering = [[i] for i in range(self.tweets_df.index.size)]
+            tweet_cluster_vector_df = self._calc_tweet_cluster_vector_df(clustering)
+
+            self.adj = self._calc_cosine_similarity_matrix(tweet_cluster_vector_df)
+
+            # initialize clusterer class with network
+            self.clusterer = Clusterer(self.topic, network_df=self.adj)
+            self.clusterer.backward_path()
+
+            while iteration_count < 100:
+                clustering = self.clusterer.get_clustering(method='coarsest')
+
+                tweet_cluster_assignment_df['cluster_{}'.format(iteration_count)] = 0
+
+                for i in range(len(clustering)):
+                    tweet_cluster_assignment_df.loc[self.node_id_map[clustering[i]].values,
+                                                    'cluster_{}'.format(iteration_count)] = i
+
+                if ((tweet_cluster_assignment_df['cluster_{}'.format(iteration_count - 1)].values ==
+                        tweet_cluster_assignment_df['cluster_{}'.format(iteration_count)].values).all()):
+                    break
+
+                tweet_cluster_vector_df = self._calc_tweet_cluster_vector_df(clustering)
+                self.adj = self._calc_cosine_similarity_matrix(tweet_cluster_vector_df)
+
+                # update clusterer
+                self.clusterer.update_network(self.adj)
+                self.clusterer.backward_path()
+
+                iteration_count = iteration_count + 1
+
+            print(iteration_count)
+
+            # write network to .csv file
+            self.adj.to_csv('{}_network.csv'.format(self.topic))
+
+            # write cluster evolution to .csv file
+            tweet_cluster_assignment_df.to_csv('{}_cluster_evolution.csv'.format(self.topic))
+
+        elif method == 'binary_and_sentiment':
+            hashtag_df = self.feature_extractor.get_hashtag_dataframe()
+            mentions_df = self.feature_extractor.get_mentions_dataframe()
+            self.tweet_sentiment_adj = self.feature_extractor.get_sentiment_dataframe()
+            self.tweet_binary_feature_matrix = pd.concat([hashtag_df, mentions_df], axis=1)
+            self._calc_similarity(ideal_radians_from_sentiment=ideal_radians_from_sentiment)
+            self.adj.to_csv('{}_network.csv'.format(self.topic))
+
+        else:
+            print('TweetNetwork: Method {} not implemented'.format(method))
+            sys.exit()
+
+    @staticmethod
+    def _calc_cosine_similarity_matrix(cluster_vector_df):
+
+        def normalize_vector(vector):
+            magnitude = np.dot(vector, vector) ** (1 / 2)
+            if magnitude == 0:
+                return vector
+            else:
+                return vector / magnitude
+
+        # normalize each vector in the cluster_vector_df
+        vector_df = cluster_vector_df.apply(normalize_vector)
+        return (pd.DataFrame(np.matmul(np.stack(vector_df.values), np.stack(vector_df.values).T),
+                             index=vector_df.index, columns=vector_df.index))
 
     def _calc_similarity(self, ideal_radians_from_sentiment: float = math.pi / 4) -> None:
         """
@@ -58,118 +137,30 @@ class TweetNetwork:
 
         self.adj = (binary_coeff * binary_feature_adj + sentiment_coeff * self.tweet_sentiment_adj) / magnitude
 
-    def get_node_tweet_id_map(self) -> dict:
-        return self.node_tweet_id_map
+    def _calc_tweet_cluster_vector_df(self, clustering) -> pd.DataFrame:
+        hashtag_df = self.feature_extractor.get_hashtag_dataframe()
+        hashtag_frequency_series = self.feature_extractor.get_hashtag_frequency_series()
+        tweet_vector_df = pd.DataFrame(index=hashtag_df.index, columns=['vector'])
+        tweet_vector_df['vector'] = hashtag_df.index
+
+        hashtag_df['cluster'] = 0
+
+        for i in range(len(clustering)):
+            hashtag_df.loc[self.node_id_map[clustering[i]].values, 'cluster'] = i
+
+        cluster_hashtag_frequency_df = hashtag_df.groupby('cluster').agg('sum') / hashtag_frequency_series
+
+        def vector_calc(tweet_id):
+            hashtag_set = hashtag_df.drop('cluster', axis='columns').loc[tweet_id, :]
+            hashtag_set = hashtag_set.loc[:, (hashtag_set != 0).any(axis='rows')].columns.values
+            if len(hashtag_set) == 0:
+                return np.zeros(len(clustering))
+            vector = cluster_hashtag_frequency_df.loc[:, hashtag_set].dot(1 / hashtag_frequency_series[
+                hashtag_set]).values
+            return vector / (1 / hashtag_frequency_series[hashtag_set]).sum()
+
+        return tweet_vector_df.apply(vector_calc, axis='columns')
 
     def get_adj_list(self):
         return self.adj.values.tolist()
-
-    def _generate_mentions_data_frame(self) -> pd.DataFrame:
-        """
-        helper method for build_and_write_network().
-        :return: hashtag_dataframe: pandas DataFrame where entry m_ij = 1 of tweet_i contains mention_j
-        """
-
-        # create dictionary of mentions
-        mentions_by_user = {}
-        for tweet_id in self.tweets_df.index:
-            mentions_by_user[tweet_id] = np.array([h['screen_name']
-                                                   for h in eval(self.tweets_df.loc[tweet_id, 'entities'])
-                                                   ['user_mentions']])
-
-        mentions_list = list(set(list(np.concatenate(list(mentions_by_user.values())))))
-
-        mentions_dataframe = pd.DataFrame(np.zeros((self.tweets_df.shape[0], len(mentions_list))),
-                                          index=self.tweets_df.index, columns=mentions_list)
-
-        for tweet_id in self.tweets_df.index:
-            mentions_arr = np.array(mentions_by_user[tweet_id])
-            mentions_series = pd.Series(1, index=mentions_arr).reindex(mentions_list, fill_value=0)
-            mentions_dataframe.loc[tweet_id, :] = mentions_series
-
-        return mentions_dataframe
-
-    def _connect_followers_and_friends(self) -> None:
-        for idx in self.tweets_df.index:
-            followers_arr = np.fromstring(self.tweets_df.loc[idx, 'followers'], sep=',')
-            friends_arr = np.fromstring(self.tweets_df.loc[idx, 'friends'], sep=',')
-
-            followers_series = pd.Series(1, index=followers_arr).reindex(self.tweets_df.index, fill_value=0)
-            friends_series = pd.Series(1, index=friends_arr).reindex(self.tweets_df.index, fill_value=0)
-
-            self.adj.loc[:, idx] = self.adj.loc[:, idx] + followers_series
-            self.adj.loc[:, idx] = self.adj.loc[:, idx] + friends_series
-
-    def _generate_sentiment_data_frame(self) -> None:
-        """
-        Helper method for build_and_write_network(). Adds edges based on how similar their sentiment is
-        :return:
-        """
-        sentiment_dataframe = pd.DataFrame(np.zeros((self.tweets_df.shape[0], 1)), index=self.tweets_df.index,
-                                           columns=['sentiment'])
-
-        self.tweet_sentiment_adj = pd.DataFrame(np.zeros((self.tweets_df.shape[0], self.tweets_df.shape[0])),
-                                                index=self.tweets_df.index, columns=self.tweets_df.index)
-
-        def calc_sentiment(tweet_text):
-            tweet_text_blob = TextBlob(tweet_text)
-            return tweet_text_blob.sentiment.polarity
-
-        sentiment_dataframe.loc[:, 'sentiment'] = self.tweets_df.loc[:, 'text'].apply(calc_sentiment)
-
-        for tweet_id_i in self.tweets_df.index:
-            for tweet_id_j in self.tweets_df.index:
-                if tweet_id_i != tweet_id_j:
-                    self.tweet_sentiment_adj.loc[tweet_id_i, tweet_id_j] = math.e ** (
-                            (-2) * ((sentiment_dataframe.loc[tweet_id_i, 'sentiment']
-                                     - sentiment_dataframe.loc[tweet_id_j, 'sentiment']) ** 2))
-
-
-        # negative_sentiment_df = sentiment_dataframe[sentiment_dataframe.loc[:, 'sentiment'] < 0].reindex(
-        #     sentiment_dataframe.index, fill_value=0)
-        #
-        # negative_sentiment_df.columns = ['negative_sentiment']
-        #
-        # negative_sentiment_df.loc[:, 'negative_sentiment'] = negative_sentiment_df.loc[:, 'negative_sentiment'].abs()
-        #
-        # positive_sentiment_df = sentiment_dataframe[sentiment_dataframe.loc[:, 'sentiment'] > 0].reindex(
-        #     sentiment_dataframe.index, fill_value=0)
-        #
-        # positive_sentiment_df.columns = ['positive_sentiment']
-        #
-        # negative_sentiment_df[sentiment_dataframe.loc[:, 'sentiment'] == 0] = 0.25
-        # positive_sentiment_df[sentiment_dataframe.loc[:, 'sentiment'] == 0] = 0.25
-        #
-        # sentiment_dataframe = pd.concat([negative_sentiment_df, positive_sentiment_df], join='outer', axis='columns')
-
-        # return sentiment_dataframe
-
-    def _generate_hashtag_data_frame(self) -> pd.DataFrame:
-        """
-        helper method for build_and_write_network().
-        :return: hashtag_dataframe: pandas DataFrame where entry h_ij = 1 of tweet_i contains hashtag_j
-        """
-
-        # create dictionary of hashtags
-        hashtags_by_user = {}
-        for tweet_id in self.tweets_df.index:
-            hashtags_by_user[tweet_id] = np.array([h['text']
-                                                   for h in eval(self.tweets_df.loc[tweet_id, 'entities'])['hashtags']])
-            description = eval(self.tweets_df.loc[tweet_id, 'user'])['description']
-            if description is not None:
-                hashtags_by_user[tweet_id] = np.append(hashtags_by_user[tweet_id], re.findall(r"#(\w+)",
-                                                                                              description))
-
-        hashtag_list = list(set(list(np.concatenate(list(hashtags_by_user.values())))))
-
-        hashtag_dataframe = pd.DataFrame(np.zeros((self.tweets_df.shape[0], len(hashtag_list))),
-                                      index=self.tweets_df.index, columns=hashtag_list)
-
-        for tweet_id in self.tweets_df.index:
-            hashtag_arr = np.array(hashtags_by_user[tweet_id])
-            hashtag_series = pd.Series(1, index=hashtag_arr).reindex(hashtag_list, fill_value=0)
-            hashtag_dataframe.loc[tweet_id, :] = hashtag_series
-
-        return hashtag_dataframe
-
 

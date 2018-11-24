@@ -280,6 +280,4 @@ def back_path_clustering(adj, TranList, TranCumul):
         if interval - critical_times[-1] >= 100 or user_coal_index:
             flag = 1
 
-    # TODO: return single "best" clustering. For now return first...
-
-    return clusterings[0], critical_times
+    return clusterings, critical_times
