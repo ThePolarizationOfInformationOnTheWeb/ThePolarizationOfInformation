@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import math
 import re
+import sys
 from textblob import TextBlob
 
 
@@ -18,6 +19,7 @@ class TweetFeatureExtractor:
         self.hashtag_dataframe = None
         self.tweet_sentiment_adj = None
         self.hashtag_sentiment_dataframe = None
+        self.hashtag_frequency_series = None
 
     def _generate_mentions_dataframe(self):
         """
@@ -115,9 +117,33 @@ class TweetFeatureExtractor:
 
     def get_hashtag_sentiment_dataframe(self) -> pd.DataFrame:
         if self.hashtag_sentiment_dataframe is None:
-            self.hashtag_sentiment_dataframe = pd.read_csv('{}_hashtag_sentiments.csv'.format(self.topic),
-                                                           index_col='hashtag')
-            self.hashtag_sentiment_dataframe['polarity'] = (self.get_hashtag_sentiment_dataframe['right']
+            try:
+                self.hashtag_sentiment_dataframe = pd.read_csv("{}_hashtag_sentiments.csv".format(self.topic),
+                                                               index_col='hashtag')
+
+            except FileNotFoundError:
+                print("TweetNetwork: {}_hashtag_sentiments.csv does not exist.".format(self.topic))
+                print("TweetNetwork: Use hashtag_sentiment.py script to generate empty {}_hashtag_sentiments.csv file "
+                      "and then manually label hashtags using excel or whatever editor you like most, "
+                      "and... good luck".format(self.topic))
+                sys.exit()
+
+            if (self.hashtag_sentiment_dataframe['left'].isnull().sum() > 0 or
+                    self.hashtag_sentiment_dataframe['right'].isnull().sum() > 0):
+                print("TweetNetwork: {}_hashtag_sentiments.csv exists but "
+                      "is not completely filled yet".format(self.topic))
+                sys.exit()
+
+            self.hashtag_sentiment_dataframe['polarity'] = (self.hashtag_sentiment_dataframe['right']
                                                             - self.hashtag_sentiment_dataframe['left'])
         return self.hashtag_sentiment_dataframe[['polarity']]
 
+    def get_hashtag_frequency_series(self) -> pd.DataFrame:
+        if self.hashtag_frequency_series is None:
+            if self.hashtag_dataframe is None:
+                self._generate_hashtag_dataframe()
+
+            self.hashtag_frequency_series = self.hashtag_dataframe.sum(axis='rows')
+
+
+        return self.hashtag_frequency_series

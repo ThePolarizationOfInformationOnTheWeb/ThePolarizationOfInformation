@@ -5,16 +5,22 @@ from BackwardPath import back_path_clustering, transval
 
 
 class Clusterer:
-    weighted_adj_matrix = []  # adj_matrix[i][j] = directed edge weight from node i to node j
 
-    def __init__(self, topic: str):
-        network_df = pd.read_csv('{}_network.csv'.format(topic), index_col='id')
+    def __init__(self, topic: str, network_df: pd.DataFrame = None):
+
+        if network_df is None:
+            network_df = pd.read_csv('{}_network.csv'.format(topic), index_col='id')
+
         self.topic = topic
         self.weighted_adj_matrix = network_df.values.tolist()
         self.node_id_map = pd.Series(dict(zip(list(range(network_df.shape[0])), network_df.index.tolist())))
         self.feature_extractor = TweetFeatureExtractor(self.topic)
         self.clusterings = None
         self.back_path_critical_times = None
+
+    def update_network(self, new_network_df: pd.DataFrame):
+        self.weighted_adj_matrix = new_network_df.values.tolist()
+        self.node_id_map = pd.Series(dict(zip(list(range(new_network_df.shape[0])), new_network_df.index.tolist())))
 
     def backward_path(self):
         TranList, TranCumul = transval(self.weighted_adj_matrix)
