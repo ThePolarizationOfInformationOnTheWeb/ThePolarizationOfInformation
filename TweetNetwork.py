@@ -32,19 +32,30 @@ class TweetNetwork:
         """
         if method == 'kmeans_update':
 
+            # drop tweets without hashtags and create new feature extractor instance with only those tweets
+            tweets_with_hashtags = self.feature_extractor.get_tweets_with_hashtags()
+            self.feature_extractor = TweetFeatureExtractor(topic=self.topic,
+                                                                           tweets_df=tweets_with_hashtags)
+
+            self.node_id_map = pd.Series(dict(zip(list(range(tweets_with_hashtags.shape[0])),
+                                                  tweets_with_hashtags.index.tolist())))
+
+            # print(self.node_id_map)
+
             iteration_count = 1
 
-            tweet_cluster_assignment_df = pd.DataFrame(index=self.tweets_df.index)
-            tweet_cluster_assignment_df['cluster_0'] = list(range(self.tweets_df.shape[0]))
+            tweet_cluster_assignment_df = pd.DataFrame(index=tweets_with_hashtags.index)
+            tweet_cluster_assignment_df['cluster_0'] = list(range(tweets_with_hashtags.shape[0]))
 
             # initially every node is in its own cluster
-            clustering = [[i] for i in range(self.tweets_df.index.size)]
+            clustering = [[i] for i in range(tweets_with_hashtags.index.size)]
             tweet_cluster_vector_df = self._calc_tweet_cluster_vector_df(clustering)
 
             self.adj = self._calc_cosine_similarity_matrix(tweet_cluster_vector_df)
 
             # initialize clusterer class with network
-            self.clusterer = Clusterer(self.topic, network_df=self.adj)
+            self.clusterer = Clusterer(self.topic, network_df=self.adj, node_id_map=self.node_id_map,
+                                       feature_extractor=self.feature_extractor)
             self.clusterer.backward_path()
 
             while iteration_count < 100:
@@ -64,7 +75,7 @@ class TweetNetwork:
                 self.adj = self._calc_cosine_similarity_matrix(tweet_cluster_vector_df)
 
                 # update clusterer
-                self.clusterer.update_network(self.adj)
+                self.clusterer.update_network(self.adj, node_id_map=self.node_id_map)
                 self.clusterer.backward_path()
 
                 iteration_count = iteration_count + 1

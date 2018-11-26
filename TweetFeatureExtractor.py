@@ -8,18 +8,23 @@ from textblob import TextBlob
 
 class TweetFeatureExtractor:
 
-    def __init__(self, topic: str):
+    def __init__(self, topic: str, tweets_df: pd.DataFrame = None):
         self.topic = topic
-        try:
-            self.tweets_df = pd.read_csv("{}_tweets.csv".format(self.topic), index_col='id')
-        except FileNotFoundError:
-            print("File: {}_tweets.csv was not found. Use TweetCollector to generate this file".format(self.topic))
+        if tweets_df is None:
+            try:
+                self.tweets_df = pd.read_csv("{}_tweets.csv".format(self.topic), index_col='id')
+            except FileNotFoundError:
+                print("File: {}_tweets.csv was not found. Use TweetCollector to generate this file".format(self.topic))
+                sys.exit(0)
+        else:
+            self.tweets_df = tweets_df
         self.mentions_dataframe = None
         self.sentiment_dataframe = None
         self.hashtag_dataframe = None
         self.tweet_sentiment_adj = None
         self.hashtag_sentiment_dataframe = None
         self.hashtag_frequency_series = None
+        self.tweets_with_hashtags_dataframe = None
 
     def _generate_mentions_dataframe(self):
         """
@@ -94,11 +99,11 @@ class TweetFeatureExtractor:
             hashtags_by_tweet[tweet_id] = [h_tag.lower() for h_tag in np.array([h['text'] for h in eval(
                 self.tweets_df.loc[tweet_id, 'entities'])['hashtags']])]
 
-            # hashtags from user descriptions
-            description = eval(self.tweets_df.loc[tweet_id, 'user'])['description']
-            if description is not None:
-                hashtags_by_tweet[tweet_id] = np.append(
-                    hashtags_by_tweet[tweet_id], [h_tag.lower() for h_tag in re.findall(r"#(\w+)", description)])
+            # # hashtags from user descriptions
+            # description = eval(self.tweets_df.loc[tweet_id, 'user'])['description']
+            # if description is not None:
+            #     hashtags_by_tweet[tweet_id] = np.append(
+            #         hashtags_by_tweet[tweet_id], [h_tag.lower() for h_tag in re.findall(r"#(\w+)", description)])
 
             # ensure no duplicates for each tweet
             hashtags_by_tweet[tweet_id] = list(set(hashtags_by_tweet[tweet_id]))
@@ -158,3 +163,14 @@ class TweetFeatureExtractor:
 
 
         return self.hashtag_frequency_series
+
+    def get_tweets_with_hashtags(self) -> pd.DataFrame:
+        if self.hashtag_dataframe is None:
+            self._generate_hashtag_dataframe()
+
+        if self.tweets_with_hashtags_dataframe is None:
+            hashtagged_tweets = self.hashtag_dataframe[(self.hashtag_dataframe.T != 0).any()].index
+
+            self.tweets_with_hashtags_dataframe = self.tweets_df.loc[hashtagged_tweets, :]
+
+        return self.tweets_with_hashtags_dataframe
