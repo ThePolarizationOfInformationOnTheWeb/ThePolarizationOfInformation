@@ -34,13 +34,13 @@ class TweetNetwork:
 
             # drop tweets without hashtags and create new feature extractor instance with only those tweets
             tweets_with_hashtags = self.feature_extractor.get_tweets_with_hashtags()
-            self.feature_extractor = TweetFeatureExtractor(topic=self.topic,
-                                                                           tweets_df=tweets_with_hashtags)
-
-            self.node_id_map = pd.Series(dict(zip(list(range(tweets_with_hashtags.shape[0])),
-                                                  tweets_with_hashtags.index.tolist())))
+            self.feature_extractor = TweetFeatureExtractor(topic=self.topic, tweets_df=tweets_with_hashtags)
+            self.node_id_map = pd.Series(data=tweets_with_hashtags.index.tolist())
 
             # print(self.node_id_map)
+            # print(tweets_with_hashtags.index)
+
+            # print(self.feature_extractor.get_tweet_hashtag_sentiment_series())
 
             iteration_count = 1
 
@@ -79,6 +79,7 @@ class TweetNetwork:
                 self.clusterer.backward_path()
 
                 iteration_count = iteration_count + 1
+                print(iteration_count)
 
             print(iteration_count)
 
@@ -154,7 +155,7 @@ class TweetNetwork:
         tweet_vector_df = pd.DataFrame(index=hashtag_df.index, columns=['vector'])
         tweet_vector_df['vector'] = hashtag_df.index
 
-        hashtag_df['cluster'] = 0
+        hashtag_df = hashtag_df.assign(cluster=0)
 
         for i in range(len(clustering)):
             hashtag_df.loc[self.node_id_map[clustering[i]].values, 'cluster'] = i

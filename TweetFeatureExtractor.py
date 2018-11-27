@@ -25,6 +25,7 @@ class TweetFeatureExtractor:
         self.hashtag_sentiment_dataframe = None
         self.hashtag_frequency_series = None
         self.tweets_with_hashtags_dataframe = None
+        self.tweet_hashtag_sentiment_series = None
 
     def _generate_mentions_dataframe(self):
         """
@@ -47,12 +48,6 @@ class TweetFeatureExtractor:
             mentions_arr = np.array(mentions_by_user[tweet_id])
             mentions_series = pd.Series(1, index=mentions_arr).reindex(mentions_list, fill_value=0)
             self.mentions_dataframe.loc[tweet_id, :] = mentions_series
-
-    def get_mentions_dataframe(self) -> pd.DataFrame:
-        if self.mentions_dataframe is None:
-            self._generate_mentions_dataframe()
-
-        return self.mentions_dataframe
 
     def _generate_sentiment_dataframe(self) -> None:
         """
@@ -77,12 +72,6 @@ class TweetFeatureExtractor:
                     self.tweet_sentiment_adj.loc[tweet_id_i, tweet_id_j] = math.e ** (
                             (-2) * ((self.sentiment_dataframe.loc[tweet_id_i, 'sentiment']
                                      - self.sentiment_dataframe.loc[tweet_id_j, 'sentiment']) ** 2))
-
-    def get_sentiment_dataframe(self) -> pd.DataFrame:
-        if self.sentiment_dataframe is None:
-            self._generate_sentiment_dataframe()
-
-        return self.sentiment_dataframe
 
     def _generate_hashtag_dataframe(self) -> None:
         """
@@ -123,7 +112,75 @@ class TweetFeatureExtractor:
             hashtag_series = pd.Series(1, index=hashtag_arr).reindex(hashtag_list, fill_value=0)
             self.hashtag_dataframe.loc[tweet_id, :] = hashtag_series
 
-        return self.hashtag_dataframe
+    def _generate_hashtag_sentiment_dataframe(self) -> None:
+        try:
+            self.hashtag_sentiment_dataframe = pd.read_csv("{}_hashtag_sentiments.csv".format(self.topic),
+                                                           index_col='hashtag')
+
+        except FileNotFoundError:
+            print("TweetNetwork: {}_hashtag_sentiments.csv does not exist.".format(self.topic))
+            print("TweetNetwork: Use hashtag_sentiment.py script to generate empty {}_hashtag_sentiments.csv file "
+                  "and then manually label hashtags using excel or whatever editor you like most, "
+                  "and... good luck".format(self.topic))
+            sys.exit()
+
+        if (self.hashtag_sentiment_dataframe['left'].isnull().sum() > 0 or
+                self.hashtag_sentiment_dataframe['right'].isnull().sum() > 0):
+            print("TweetNetwork: {}_hashtag_sentiments.csv exists but "
+                  "is not completely filled yet".format(self.topic))
+            sys.exit()
+
+        self.hashtag_sentiment_dataframe['polarity'] = (self.hashtag_sentiment_dataframe['right']
+                                                        - self.hashtag_sentiment_dataframe['left'])
+
+    def _generate_tweet_hashtag_sentiment_series(self) -> None:
+        if self.hashtag_sentiment_dataframe is None:
+            self._generate_hashtag_sentiment_dataframe()
+
+        if self.hashtag_dataframe is None:
+            self._generate_hashtag_dataframe()
+
+        if self.tweets_with_hashtags_dataframe is None:
+            self._generate_tweets_with_hashtags_dataframe()
+
+        tweet_hashtag_sentiment_dataframe = pd.DataFrame(index=self.tweets_with_hashtags_dataframe.index,
+                                                         columns=['sentiment'])
+
+        tweet_hashtag_sentiment_dataframe['sentiment'] = self.tweets_with_hashtags_dataframe.index
+
+        def average_hashtag_sentiment(tweet_id):
+            '''
+            helper to calculate the average hashtag sentiment for each tweet
+            :param tweet_id:
+            :return: the average hashtag sentiment for the tweet with tweet id tweet_id
+            '''
+            hashtags_for_tweet = self.hashtag_dataframe.columns[np.nonzero(
+                self.hashtag_dataframe.loc[tweet_id, :].values)].values
+            # print(hashtags_for_tweet)
+            # print(self.hashtag_sentiment_dataframe[['polarity']].loc[hashtags_for_tweet, :].values)
+            return np.average(self.hashtag_sentiment_dataframe.loc[hashtags_for_tweet, 'polarity'].values)
+
+        self.tweet_hashtag_sentiment_series = tweet_hashtag_sentiment_dataframe['sentiment'].apply(average_hashtag_sentiment)
+
+    def _generate_tweets_with_hashtags_dataframe(self) -> None:
+        if self.hashtag_dataframe is None:
+            self._generate_hashtag_dataframe()
+
+        hashtagged_tweets = self.hashtag_dataframe[(self.hashtag_dataframe.T != 0).any()].index
+
+        self.tweets_with_hashtags_dataframe = self.tweets_df.loc[hashtagged_tweets, :]
+
+    def get_mentions_dataframe(self) -> pd.DataFrame:
+        if self.mentions_dataframe is None:
+            self._generate_mentions_dataframe()
+
+        return self.mentions_dataframe
+
+    def get_sentiment_dataframe(self) -> pd.DataFrame:
+        if self.sentiment_dataframe is None:
+            self._generate_sentiment_dataframe()
+
+        return self.sentiment_dataframe
 
     def get_hashtag_dataframe(self) -> pd.DataFrame:
         if self.hashtag_dataframe is None:
@@ -133,25 +190,8 @@ class TweetFeatureExtractor:
 
     def get_hashtag_sentiment_dataframe(self) -> pd.DataFrame:
         if self.hashtag_sentiment_dataframe is None:
-            try:
-                self.hashtag_sentiment_dataframe = pd.read_csv("{}_hashtag_sentiments.csv".format(self.topic),
-                                                               index_col='hashtag')
+            self._generate_hashtag_sentiment_dataframe()
 
-            except FileNotFoundError:
-                print("TweetNetwork: {}_hashtag_sentiments.csv does not exist.".format(self.topic))
-                print("TweetNetwork: Use hashtag_sentiment.py script to generate empty {}_hashtag_sentiments.csv file "
-                      "and then manually label hashtags using excel or whatever editor you like most, "
-                      "and... good luck".format(self.topic))
-                sys.exit()
-
-            if (self.hashtag_sentiment_dataframe['left'].isnull().sum() > 0 or
-                    self.hashtag_sentiment_dataframe['right'].isnull().sum() > 0):
-                print("TweetNetwork: {}_hashtag_sentiments.csv exists but "
-                      "is not completely filled yet".format(self.topic))
-                sys.exit()
-
-            self.hashtag_sentiment_dataframe['polarity'] = (self.hashtag_sentiment_dataframe['right']
-                                                            - self.hashtag_sentiment_dataframe['left'])
         return self.hashtag_sentiment_dataframe[['polarity']]
 
     def get_hashtag_frequency_series(self) -> pd.DataFrame:
@@ -161,16 +201,19 @@ class TweetFeatureExtractor:
 
             self.hashtag_frequency_series = self.hashtag_dataframe.sum(axis='rows')
 
-
         return self.hashtag_frequency_series
 
     def get_tweets_with_hashtags(self) -> pd.DataFrame:
-        if self.hashtag_dataframe is None:
-            self._generate_hashtag_dataframe()
-
         if self.tweets_with_hashtags_dataframe is None:
-            hashtagged_tweets = self.hashtag_dataframe[(self.hashtag_dataframe.T != 0).any()].index
-
-            self.tweets_with_hashtags_dataframe = self.tweets_df.loc[hashtagged_tweets, :]
+            self._generate_tweets_with_hashtags_dataframe()
 
         return self.tweets_with_hashtags_dataframe
+
+    def get_tweet_hashtag_sentiment_series(self) -> pd.DataFrame:
+        if self.tweet_hashtag_sentiment_series is None:
+            self._generate_tweet_hashtag_sentiment_series()
+
+        # print(self.tweet_hashtag_sentiment_series)
+
+        return self.tweet_hashtag_sentiment_series
+

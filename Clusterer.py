@@ -62,27 +62,28 @@ class Clusterer:
             return self.clusterings
 
         elif method == 'coarsest':
-            hashtag_df = self.feature_extractor.get_hashtag_dataframe()
-            hashtag_sentiment_df = self.feature_extractor.get_hashtag_sentiment_dataframe()
+            tweet_hashtag_sentiment_df = self.feature_extractor.get_tweet_hashtag_sentiment_series()
 
-            def contrasting_sentiment(h_tag_list):
+            # print(tweet_hashtag_sentiment_df)
+
+            def contrasting_sentiment(h_tag_sentiment_list):
                 """
                 Helper for apply() method
                 :param h_tag_list:
                 :return: Boolean indicating if there are contrasting polarity hashtags in the h_tag list
                 """
-                return np.diff(np.signbit(hashtag_sentiment_df.loc[h_tag_list, 'polarity'].values[
-                                              hashtag_sentiment_df.loc[h_tag_list, 'polarity'].values.nonzero()])
-                               ).sum() != 0
+                # print(h_tag_sentiment_list)
+                return np.diff(np.signbit(h_tag_sentiment_list)).sum() != 0
 
             for i in np.arange(len(self.clusterings) - 1, -1, -1):
-                hashtag_sets = pd.Series(name='hashtags', data=np.NaN, index=np.arange(len(self.clusterings[i])))
+                tweet_hashtag_sentiment_sets = pd.DataFrame(index=np.arange(len(self.clusterings[i])),
+                                                            columns=['tweets'])
                 for j in range(len(self.clusterings[i])):
-                    # hashtag_sets is a series holding the sets of all hashtags for each group
-                    hashtag_sets[j] = hashtag_df.columns[
-                        hashtag_df.loc[self.node_id_map[self.clusterings[i][j]].values, :].any(axis='rows')].values
+                    # tweet_hashtag_sentiment_sets is a series holding the sets of all tweet sentiments for each group
+                    # print(self.node_id_map[self.clusterings[i][j]].values)
+                    tweet_hashtag_sentiment_sets.loc[j, 'tweets'] = tweet_hashtag_sentiment_df.loc[self.node_id_map[self.clusterings[i][j]].values].values
 
-                if not np.any(hashtag_sets.apply(contrasting_sentiment).values):
+                if not np.any(tweet_hashtag_sentiment_sets['tweets'].apply(contrasting_sentiment).values):
                     return self.clusterings[i]
 
             print("Couldn't find a coarse clustering without contrasting sentiments within the same cluster. Returning "
