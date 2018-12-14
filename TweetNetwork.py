@@ -67,9 +67,14 @@ class TweetNetwork:
                     tweet_cluster_assignment_df.loc[self.node_id_map[clustering[i]].values,
                                                     'cluster_{}'.format(iteration_count)] = i
 
-                if ((tweet_cluster_assignment_df['cluster_{}'.format(iteration_count - 1)].values ==
-                        tweet_cluster_assignment_df['cluster_{}'.format(iteration_count)].values).all()):
+                flag = True
+                for cluster in tweet_cluster_assignment_df['cluster_{}'.format(iteration_count - 1)].values:
+                        if cluster not in tweet_cluster_assignment_df['cluster_{}'.format(iteration_count)].values:
+                            flag = False
+                            break
+                if flag == True:
                     break
+
 
                 tweet_cluster_vector_df = self._calc_tweet_cluster_vector_df(clustering)
                 self.adj = self._calc_cosine_similarity_matrix(tweet_cluster_vector_df)
@@ -85,6 +90,9 @@ class TweetNetwork:
 
             # write network to .csv file
             self.adj.to_csv('{}_network.csv'.format(self.topic))
+
+            # write cluster_vector_df to .csv file
+            tweet_cluster_vector_df.to_csv('{}_tweet_cluster_vectors.csv'.format(self.topic))
 
             # write cluster evolution to .csv file
             tweet_cluster_assignment_df.to_csv('{}_cluster_evolution.csv'.format(self.topic))
@@ -113,7 +121,7 @@ class TweetNetwork:
 
         # normalize each vector in the cluster_vector_df
         vector_df = cluster_vector_df.apply(normalize_vector)
-        return (pd.DataFrame(np.matmul(np.stack(vector_df.values), np.stack(vector_df.values).T),
+        return (pd.DataFrame(np.power(math.e, 10 * np.power(np.matmul(np.stack(vector_df.values), np.stack(vector_df.values).T), 4) -3),
                              index=vector_df.index, columns=vector_df.index))
 
     def _calc_similarity(self, ideal_radians_from_sentiment: float = math.pi / 4) -> None:

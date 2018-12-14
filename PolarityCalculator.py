@@ -1,5 +1,7 @@
 import networkx as nx
+import pandas as pd
 from Clusterer import Clusterer
+from TweetFeatureExtractor import TweetFeatureExtractor
 
 
 class PolarityCalculator:
@@ -7,9 +9,16 @@ class PolarityCalculator:
     def __init__(self, topic: str):
         self.topic = topic
         self.back_path_clusterer = None
+        feature_extractor = TweetFeatureExtractor(topic)
+        tweets_with_hashtags = feature_extractor.get_tweets_with_hashtags()
+        self.feature_extractor = TweetFeatureExtractor(topic=self.topic, tweets_df=tweets_with_hashtags)
+        adj = pd.read_csv('{}_network.csv'.format(topic), index_col='id')
+        self.adj = adj.loc[tweets_with_hashtags.index.tolist(), [str(i) for i in tweets_with_hashtags.index.tolist()]]
+        self.node_id_map = pd.Series(data=tweets_with_hashtags.index.tolist())
 
     def cluster_backward_path(self) -> None:
-        self.back_path_clusterer = Clusterer(self.topic)
+        self.back_path_clusterer = Clusterer(self.topic, network_df=self.adj, node_id_map=self.node_id_map,
+                                             feature_extractor=self.feature_extractor)
         self.back_path_clusterer.backward_path()
 
     def conductance_calc(self, clustering_type: str = 'back_path') -> float:
@@ -31,7 +40,7 @@ class PolarityCalculator:
         else:
             weighted_adj = clusterer.get_weighted_adj()
             # weighted_adj = [(np.array(w) / sum(w)).tolist() for w in weighted_adj]
-            clustering = clusterer.get_clustering(method = 'coarsest')
+            clustering = clusterer.get_clustering(method='coarsest')
 
         # generate networkx graph to obtain conductance values of clusterings after each critical time
         nx_graph = nx.DiGraph()
@@ -72,4 +81,4 @@ class PolarityCalculator:
 
             conductance_values.append((float(cut_size) / float(min(volume_not_i, volume_i))))
 
-        return min(conductance_values)
+        return conductance_values

@@ -158,7 +158,10 @@ class TweetFeatureExtractor:
                 self.hashtag_dataframe.loc[tweet_id, :].values)].values
             # print(hashtags_for_tweet)
             # print(self.hashtag_sentiment_dataframe[['polarity']].loc[hashtags_for_tweet, :].values)
-            return np.average(self.hashtag_sentiment_dataframe.loc[hashtags_for_tweet, 'polarity'].values)
+            try:
+                return np.average(self.hashtag_sentiment_dataframe.loc[hashtags_for_tweet, 'polarity'].values)
+            except KeyError:
+                return 0
 
         self.tweet_hashtag_sentiment_series = tweet_hashtag_sentiment_dataframe['sentiment'].apply(average_hashtag_sentiment)
 
