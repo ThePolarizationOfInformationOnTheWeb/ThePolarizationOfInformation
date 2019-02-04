@@ -5,6 +5,7 @@ access_key.txt
 access_secret.txt
 consumer_key.txt
 consumer_secret.txt
+venv
 *.pyc
 *.csv
 keys.csv
