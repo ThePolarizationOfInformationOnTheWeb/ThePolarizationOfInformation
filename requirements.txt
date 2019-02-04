@@ -4,3 +4,4 @@ searchtweets    # python wrapper for twitter api
 textblob        # NLP
 scipy           # scientific python
 scrapy          # newscrawler classes
+pymysql         # used to talk to MySQL data bases
