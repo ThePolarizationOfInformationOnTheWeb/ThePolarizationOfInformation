@@ -24,12 +24,16 @@ class NewsSpider(CrawlSpider):
 
     def parse_google_news_home(self, response):
         articles = response.xpath('//article')
-        print(articles[0].xpath('.//a/@href')[0].get())
 
-    # def parse_item(self, response):
-    #     self.logger.info('Hi, this is an item page! %s', response.url)
-    #     item = scrapy.Item()
-    #     item['id'] = response.xpath('//td[@id="item_id"]/text()').re(r'ID: (\d+)')
-    #     item['name'] = response.xpath('//td[@id="item_name"]/text()').get()
-    #     item['description'] = response.xpath('//td[@id="item_description"]/text()').get()
-    #     return item
+        prefix = 'https://news.google.com/'
+
+        for article_link in articles:
+            scrapy.Request(prefix + article_link.xpath('.//a/@href')[0].get(), self.parse_news_article)
+
+    def parse_news_article(self, response):
+        self.logger.info('Hi, this is an item page! %s', response.url)
+        item = scrapy.Item()
+        item['id'] = response.xpath('//td[@id="item_id"]/text()').re(r'ID: (\d+)')
+        item['name'] = response.xpath('//td[@id="item_name"]/text()').get()
+        item['description'] = response.xpath('//td[@id="item_description"]/text()').get()
+        return item
