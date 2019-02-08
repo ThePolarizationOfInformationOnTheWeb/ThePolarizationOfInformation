@@ -8,6 +8,12 @@ from newspaper import fulltext
 class NewsSpider(CrawlSpider):
     name = 'google_news'
 
+    custom_settings = {
+        'ITEM_PIPELINES': {
+            '': 300
+        }
+    }
+
     def __init__(self, topic: str):
         super().__init__()
         assert topic is not None, "topic is None"
