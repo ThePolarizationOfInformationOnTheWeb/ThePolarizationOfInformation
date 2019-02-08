@@ -6,6 +6,7 @@ access_secret.txt
 consumer_key.txt
 consumer_secret.txt
 venv
+496/scrapy.exe
 *.pyc
 *.csv
 keys.csv
