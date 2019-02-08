@@ -1,6 +1,9 @@
 import scrapy
 from scrapy.spiders import CrawlSpider
+import re
 from scrapy.linkextractors import LinkExtractor
+from newspaper import Article
+from newspaper import fulltext
 
 class NewsSpider(CrawlSpider):
     name = 'google_news'
@@ -25,15 +28,37 @@ class NewsSpider(CrawlSpider):
     def parse_google_news_home(self, response):
         articles = response.xpath('//article')
 
-        prefix = 'https://news.google.com/'
+        prefix = 'https://news.google.com'
 
-        for article_link in articles:
-            scrapy.Request(prefix + article_link.xpath('.//a/@href')[0].get(), self.parse_news_article)
+        # for article_link in articles:
+        #     article = article_link.xpath('.//a/@href')[0].get()
+        #     article = article[1:]
+        #     yield scrapy.Request(prefix + article, self.parse_news_article)
+
+        article = articles[3].xpath('.//a/@href')[0].get()
+        article = article[1:]
+        print(prefix + article)
+
+        return scrapy.Request(prefix + article, callback=self.parse_news_article)
 
     def parse_news_article(self, response):
-        self.logger.info('Hi, this is an item page! %s', response.url)
-        item = scrapy.Item()
-        item['id'] = response.xpath('//td[@id="item_id"]/text()').re(r'ID: (\d+)')
-        item['name'] = response.xpath('//td[@id="item_name"]/text()').get()
-        item['description'] = response.xpath('//td[@id="item_description"]/text()').get()
-        return item
+        print('Hi, this is an item page!{}'.format(response.url))
+        # extract url from middle page
+        regex = '(http|ftp|https)://([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?'
+        p = re.compile(regex)
+        url_string = response.xpath('.//noscript')[0].get()
+        #print(p.findall(url_string))
+        linkparts = p.findall(url_string)
+        print(linkparts[0][0]+'://'+linkparts[0][1]+linkparts[0][2])
+
+        #use newspaper to download and parse article
+        article_name = Article(response.url, language='en')
+        article_name.download()
+        article_name.parse()
+        print("article parse:")
+        print(article_name.text)
+
+
+        # file = open('test_article.txt', 'w')
+        # file.write(fulltext(article_name.html))
+        # file.close()
