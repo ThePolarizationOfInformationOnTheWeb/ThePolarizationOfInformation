@@ -11,5 +11,5 @@ venv
 *.csv
 keys.csv
 twitter_keys.yaml
-496/newscrawler/newscrawler/SQL_Login.yml
+*SQL_Login.yml
 __pycache__

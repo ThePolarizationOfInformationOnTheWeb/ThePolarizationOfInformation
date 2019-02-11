@@ -7,13 +7,19 @@
 
 
 import pymysql
+import yaml
 
-host = ''
-user = ''
-passwd = ''
-db = ''
+with open("SQL_Login.yml", 'r') as stream:
+    try:
+        MySQLLogin = yaml.load(stream)
+    except yaml.YAMLError as exc:
+        print(exc)
+        exit(1)
 
-conn = pymysql.connect(host=host, user=user, passwd=passwd, db=db)
+conn = pymysql.connect(host=MySQLLogin['localhost'],
+                       user=MySQLLogin['user'],
+                       passwd=MySQLLogin['password'],
+                       db=MySQLLogin['NewsArticles'])
 cursor = conn.cursor()
 
 class SQLPipeline(object):
