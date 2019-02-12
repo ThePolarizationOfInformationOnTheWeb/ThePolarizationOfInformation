@@ -9,16 +9,25 @@
 import pymysql
 import yaml
 
-collection_name = 'scrapy_items'
+
+class SQLPipeline(object):
+    collection_name = 'scrapy_items'
 
     def __init__(self):
+        self._conn = None
+
         with open("SQL_Login.yml", 'r') as stream:
             try:
                 mysql_login = yaml.load(stream)['MySQL_DB']
                 self._conn = pymysql.connect(host=mysql_login['host'],
-                                       user=mysql_login['user'],
-                                       passwd=mysql_login['password'],
-                                       db=mysql_login['db'])
+                                             user=mysql_login['user'],
+                                             passwd=mysql_login['password'],
+                                             db=mysql_login['db'])
+
+                with self._conn.cursor() as cursor:
+                    sql_command = "USE " + mysql_login['db']
+                    cursor.execute(sql_command)
+                    self._conn.commit()
             except yaml.YAMLError as exc:
                 print(exc)
                 exit(1)
@@ -27,24 +36,6 @@ collection_name = 'scrapy_items'
                 print('Ensure MySQL Server is running.')
                 print('Ensure host, user, password, and db information are correct')
                 exit(1)
-        
-        # Use database
-        try:
-            with self._conn.cursor() as cursor:
-                sql_command = "USE " + mysql_login['db']
-                cursor.execute(sql_command)
-                self._conn.commit()
-        except pymysql.err.InternalError as err:
-            print(err)
-            exit(1)
-
-
-    @classmethod
-    def from_crawler(cls, crawler):
-        return cls(
-            mysql_uri=crawler.settings.get('MYSQL_URI'),
-            mysql_db=crawler.settings.get('MYSQL_DATABASE', 'items')
-        )
 
     def open_spider(self, spider):
         self.client = pymysql.client(self.mysql_uri)
