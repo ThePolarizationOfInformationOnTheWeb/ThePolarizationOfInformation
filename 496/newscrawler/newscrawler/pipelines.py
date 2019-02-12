@@ -37,13 +37,9 @@ class SQLPipeline(object):
                 print('Ensure host, user, password, and db information are correct')
                 exit(1)
 
-    def open_spider(self, spider):
-        self.client = pymysql.client(self.mysql_uri)
-        self.db = self.client[self.mysql_db]
+    def 
 
     def close_spider(self, spider):
-        self.client.close()
+        self._conn.close()
 
     def process_item(self, item, spider):
-        self.db[self.collection_name].insert_one(dict(item))
-        return item
