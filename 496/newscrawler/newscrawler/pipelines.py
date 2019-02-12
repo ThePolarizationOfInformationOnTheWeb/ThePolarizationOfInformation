@@ -9,26 +9,35 @@
 import pymysql
 import yaml
 
-with open("SQL_Login.yml", 'r') as stream:
-    try:
-        MySQLLogin = yaml.load(stream)
-    except yaml.YAMLError as exc:
-        print(exc)
-        exit(1)
+collection_name = 'scrapy_items'
 
-conn = pymysql.connect(host=MySQLLogin['localhost'],
-                       user=MySQLLogin['user'],
-                       passwd=MySQLLogin['password'],
-                       db=MySQLLogin['NewsArticles'])
-cursor = conn.cursor()
+    def __init__(self):
+        with open("SQL_Login.yml", 'r') as stream:
+            try:
+                mysql_login = yaml.load(stream)['MySQL_DB']
+                self._conn = pymysql.connect(host=mysql_login['host'],
+                                       user=mysql_login['user'],
+                                       passwd=mysql_login['password'],
+                                       db=mysql_login['db'])
+            except yaml.YAMLError as exc:
+                print(exc)
+                exit(1)
+            except pymysql.err.OperationalError as err:
+                print(err)
+                print('Ensure MySQL Server is running.')
+                print('Ensure host, user, password, and db information are correct')
+                exit(1)
+        
+        # Use database
+        try:
+            with self._conn.cursor() as cursor:
+                sql_command = "USE " + mysql_login['db']
+                cursor.execute(sql_command)
+                self._conn.commit()
+        except pymysql.err.InternalError as err:
+            print(err)
+            exit(1)
 
-class SQLPipeline(object):
-
-    collection_name = 'scrapy_items'
-
-    def __init__(self, mysql_uri, mysql_db):
-        self.mysql_uri = mysql_uri
-        self.mysql_db = mysql_db
 
     @classmethod
     def from_crawler(cls, crawler):
