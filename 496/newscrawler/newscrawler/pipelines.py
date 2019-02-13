@@ -37,7 +37,7 @@ class SQLPipeline(object):
                 print('Ensure host, user, password, and db information are correct')
                 exit(1)
 
-    def 
+    def
 
     def close_spider(self, spider):
         self._conn.close()
