@@ -54,7 +54,7 @@ class NewsSpider(CrawlSpider):
         # here is where the article item is created. Add more feature extraction here.
         item = {}
         item['url'] = response.url
-        item['header'] = article_name.title
-        item['text'] = article_name.text
+        item['title'] = article_name.title
+        item['content'] = article_name.text
 
         return item
