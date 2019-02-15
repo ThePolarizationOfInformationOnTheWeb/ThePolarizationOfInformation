@@ -58,21 +58,24 @@ class SQLPipeline(object):
             self.topic_id = cursor.fetchall()[0][0]
             #print(self.topic_id)
 
-
-    def close_spider(self, spider):
+    def close_spider(self, _):
         self._conn.close()
 
-    def process_item(self, item, spider):
+    def process_item(self, item, _):
         with self._conn.cursor() as cursor:
-            sql_command = "SELECT 1 FROM Articles WHERE url = '{}' ;".format(item['url'])
-            cursor.execute(sql_command)
-            self._conn.commit()
-            result = cursor.fetchall()
-            if not result:
-                url = self._conn.escape(item['url'])
-                content = self._conn.escape(item['content'])
-                title = self._conn.escape(item['title'])
-                topic_id = self._conn.escape(self.topic_id)
-                sql_command = "INSERT INTO Articles (url, content, title, topic_id) VALUES ({},{},{},{})".format(url, content, title, topic_id)
+            try:
+                sql_command = "SELECT 1 FROM Articles WHERE url = '{}' ;".format(item['url'])
                 cursor.execute(sql_command)
                 self._conn.commit()
+                result = cursor.fetchall()
+                if not result:
+                    url = self._conn.escape(item['url'])
+                    content = self._conn.escape(item['content'])
+                    title = self._conn.escape(item['title'])
+                    topic_id = self._conn.escape(self.topic_id)
+                    sql_command = ("INSERT INTO Articles (url, content, title, topic_id) VALUES ({},{},{},{})".
+                                   format(url, content, title, topic_id))
+                    cursor.execute(sql_command)
+                    self._conn.commit()
+            except pymysql.err as err:
+                print(err)
