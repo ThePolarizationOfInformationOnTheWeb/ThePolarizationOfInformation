@@ -39,7 +39,7 @@ class NewsSpider(CrawlSpider):
         #     article = article[1:]
         #     yield scrapy.Request(prefix + article, self.parse_news_article)
 
-        article = articles[3].xpath('.//a/@href')[0].get()
+        article = articles[4].xpath('.//a/@href')[0].get()
         article = article[1:]
         print(prefix + article)
 
@@ -61,7 +61,7 @@ class NewsSpider(CrawlSpider):
 
         # here is where the article item is created. Add more feature extraction here.
         item = {}
-        item['url'] = article_name.url
+        item['url'] = link
         item['title'] = article_name.title
         item['content'] = article_name.text
 
