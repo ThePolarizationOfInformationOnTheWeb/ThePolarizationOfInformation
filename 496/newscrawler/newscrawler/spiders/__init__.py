@@ -50,6 +50,14 @@ class NewsSpider(CrawlSpider):
         article_name = Article(response.url, language='en')
         article_name.download()
         article_name.parse()
+        
+        # extract url from middle page
+        regex = '(http|ftp|https)://([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?'
+        p = re.compile(regex)
+        url_string = response.xpath('.//noscript')[0].get()
+        link_parts = p.findall(url_string)
+        link = link_parts[0][0]+'://'+link_parts[0][1]+link_parts[0][2]
+        print(link)
 
         # here is where the article item is created. Add more feature extraction here.
         item = {}
