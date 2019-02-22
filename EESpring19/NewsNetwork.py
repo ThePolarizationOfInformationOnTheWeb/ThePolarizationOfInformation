@@ -23,7 +23,7 @@ class NewsNetwork:
                 p[i] = D[i]/d_sum
 
             q = np.matmul(p, Q)
-        return p,q #use bayes rule to calculate phi
+        return p, q #use bayes rule to calculate phi
 
     def _kl_divergence(self, dist1:np.matrix, dist2:np.matrix):
         dist1 = np.array(dist1)[0]
