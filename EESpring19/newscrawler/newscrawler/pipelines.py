@@ -16,7 +16,7 @@ class SQLPipeline(object):
     def __init__(self):
         self._conn = None
 
-        with open("SQL_Login.yml", 'r') as stream:
+        with open("../../keys/SQL_Login.yml", 'r') as stream:
             try:
                 mysql_login = yaml.load(stream)['MySQL_DB']
                 self._conn = pymysql.connect(host=mysql_login['host'],
@@ -45,8 +45,6 @@ class SQLPipeline(object):
             cursor.execute(sql_command)
             self._conn.commit()
             result = cursor.fetchall()
-            #print("RESULT ____________________________________")
-            #print(result)
             if not result:
                 sql_command = "INSERT INTO Topics (description) VALUES('{}') ;".format(spider.topic)
                 cursor.execute(sql_command)
