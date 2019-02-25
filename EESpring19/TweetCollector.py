@@ -5,7 +5,7 @@ from searchtweets import gen_rule_payload, load_credentials, collect_results
 
 class TweetCollector:
 
-    def __init__(self, topic: str, path_to_keys: str = './twitter_keys.yaml'):
+    def __init__(self, topic: str, path_to_keys: str = './keys/twitter_keys.yaml'):
         # set up access to API
         self.premium_search_args = load_credentials(path_to_keys, yaml_key="search_tweets_premium", env_overwrite=False)
         self.topic = topic
