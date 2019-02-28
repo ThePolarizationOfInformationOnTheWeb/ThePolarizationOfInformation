@@ -1,8 +1,8 @@
-
 import pymysql
 import yaml
 
-class  MySQLConn:
+
+class MySQLConn:
 
     def __init__(self):
         self._conn = None
