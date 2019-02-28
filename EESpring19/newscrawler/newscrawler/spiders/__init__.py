@@ -34,14 +34,14 @@ class NewsSpider(CrawlSpider):
 
         prefix = 'https://news.google.com'
 
-        # for article_link in articles:
-        #     article = article_link.xpath('.//a/@href')[0].get()
-        #     article = article[1:]
-        #     yield scrapy.Request(prefix + article, self.parse_news_article)
+        for article_link in articles:
+            article = article_link.xpath('.//a/@href')[0].get()
+            article = article[1:]
+            yield scrapy.Request(prefix + article, self.parse_news_article)
 
-        article = articles[4].xpath('.//a/@href')[0].get()
-        article = article[1:]
-        print(prefix + article)
+        # article = articles[4].xpath('.//a/@href')[0].get()
+        # article = article[1:]
+        # print(prefix + article)
 
         return scrapy.Request(prefix + article, callback=self.parse_news_article)
 
@@ -57,12 +57,8 @@ class NewsSpider(CrawlSpider):
         url_string = response.xpath('.//noscript')[0].get()
         link_parts = p.findall(url_string)
         link = link_parts[0][0]+'://'+link_parts[0][1]+link_parts[0][2]
-        print(link)
 
         # here is where the article item is created. Add more feature extraction here.
-        item = {}
-        item['url'] = link
-        item['title'] = article_name.title
-        item['content'] = article_name.text
+        item = {'url': link, 'title': article_name.title, 'content': article_name.text}
 
         return item

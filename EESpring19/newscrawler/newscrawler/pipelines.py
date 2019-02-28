@@ -54,7 +54,6 @@ class SQLPipeline(object):
             cursor.execute(sql_command)
             self._conn.commit()
             self.topic_id = cursor.fetchall()[0][0]
-            #print(self.topic_id)
 
     def close_spider(self, _):
         self._conn.close()
@@ -62,11 +61,12 @@ class SQLPipeline(object):
     def process_item(self, item, _):
         with self._conn.cursor() as cursor:
             try:
+                # check if article already exists in table
                 sql_command = "SELECT 1 FROM Articles WHERE url = '{}' ;".format(item['url'])
                 cursor.execute(sql_command)
                 self._conn.commit()
                 result = cursor.fetchall()
-                if not result:
+                if (not result) and (len(item['content']) is not 0):
                     url = self._conn.escape(item['url'])
                     content = self._conn.escape(item['content'])
                     title = self._conn.escape(item['title'])

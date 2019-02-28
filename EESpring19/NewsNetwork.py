@@ -55,13 +55,8 @@ class NewsNetwork:
         """
         articles = self.conn.retrieve_article_text(self.topics)
 
-        def format_text(text):
-            text = text.replace("[-,.\"\']", "")
-            text = text.replace("[^\w\s]", " ")
-            return text
-
         def unique_frequency(col):
-            return article_series.str.count(col.name)
+            return article_series.str.count('\\b{}\\b'.format(col.name))
 
         def total_frequency(row):
             return row / len(article_series[row.name].split())
@@ -70,14 +65,14 @@ class NewsNetwork:
         # default replace with space
         # certain chars replace with nothing: comma, period, single hyphen, quotes
         article_series = pd.Series(articles)
-        print(article_series)
         article_series = article_series.str.lower()
-        article_series = article_series.apply(format_text)
+        article_series = article_series.str.replace("[-,.\"\']", "")
+        article_series = article_series.str.replace("[^\w\s]", " ")
 
         # unique_article_words is a list of tuples with (article id, unique values)
         unique_article_words = [(id_, np.unique(str.split(article_series[id_]))) for id_ in article_series.index]
-        _, words = zip(*unique_article_words)
-        unique_words = reduce(np.union1d, *words)
+        words = [word_list for article_id, word_list in unique_article_words]
+        unique_words = reduce(np.union1d, words)
 
         Q = pd.DataFrame(data=0, index=article_series.index, columns=unique_words)
         Q = Q.apply(unique_frequency, axis='rows')
