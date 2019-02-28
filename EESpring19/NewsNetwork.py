@@ -41,3 +41,19 @@ class NewsNetwork:
     def _build_word_probability_matrix(self):
         articles = self.conn.retrieve_article_text(self.topics)
         #remove non letters and ensure all are lowercase letters
+        #default replace with space
+        #certain chars replace with nothing: comma, period, single hyphen, quotes
+        article_series = pd.Series(articles)
+        article_series = article_series.str.lower()
+        def format_text(text):
+            text = text.replace("[-,.\"\']", "")
+            text = text.replace("[^\w\s]", " ")
+            return text
+
+        article_series = article_series.apply(format_text)
+
+        article_series = article_series.apply(str.split)
+
+
+
+
