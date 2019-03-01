@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import warnings
 
 from functools import reduce
 from EESpring19.MySQLConn import MySQLConn
@@ -32,7 +33,7 @@ class NewsNetwork:
             p_old = p
             D = [None] * len(p_old)
             for j in range(len(p_old)):
-                D[j] = p[j] * np.exp(self._kl_divergence(np.array(Q[j])[0], q))
+                D[j] = p[j] * np.exp(self._kl_divergence(np.array(Q[j])[0], np.array(q)[0]))
             d_sum = np.sum(D)
             for i in range(len(p_old)):
                 p[i] = D[i]/d_sum
@@ -40,11 +41,16 @@ class NewsNetwork:
             q = np.matmul(p, Q)
 
         # use bayes rule to calculate phi with Q,p,q
+        # phi = (p Q) / q and it isn't matrix multiplication its component wise
         return p, q
 
     @staticmethod
-    def _kl_divergence(dist1:np.array, dist2:np.array):
-        return (dist1 * np.log(dist1 / dist2)).sum()
+    def _kl_divergence(dist1: np.array, dist2: np.array):
+        warnings.filterwarnings("ignore", category=RuntimeWarning)
+        vector = dist1 * np.log(dist2 / dist1)
+        warnings.filterwarnings("default", category=RuntimeWarning)
+        vector = np.nan_to_num(vector)
+        return vector.sum()
 
     def _build_word_probability_matrix(self) -> pd.DataFrame:
         """
@@ -54,6 +60,8 @@ class NewsNetwork:
         :type: Q: pd.DataFrame
         """
         articles = self.conn.retrieve_article_text(self.topics)
+
+        print("_build_word_probability_matrix: retrieved articles")
 
         def unique_frequency(col):
             return article_series.str.count('\\b{}\\b'.format(col.name))
@@ -69,6 +77,8 @@ class NewsNetwork:
         article_series = article_series.str.replace("[-,.\"\']", "")
         article_series = article_series.str.replace("[^\w\s]", " ")
 
+        print("_build_word_probability_matrix: formatted centent text")
+
         # unique_article_words is a list of tuples with (article id, unique values)
         unique_article_words = [(id_, np.unique(str.split(article_series[id_]))) for id_ in article_series.index]
         words = [word_list for article_id, word_list in unique_article_words]
@@ -76,6 +86,9 @@ class NewsNetwork:
 
         Q = pd.DataFrame(data=0, index=article_series.index, columns=unique_words)
         Q = Q.apply(unique_frequency, axis='rows')
+
+        print("_build_word_probability_matrix: calculated unique word frequencies for articles.")
+
         Q = Q.apply(total_frequency, axis='columns')
 
         return Q

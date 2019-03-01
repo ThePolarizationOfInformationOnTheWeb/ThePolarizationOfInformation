@@ -1,5 +1,6 @@
 import pymysql
 import yaml
+import sys
 
 
 class MySQLConn:
@@ -21,12 +22,12 @@ class MySQLConn:
                     self._conn.commit()
             except yaml.YAMLError as exc:
                 print(exc)
-                exit(1)
+                sys.exit(1)
             except pymysql.err.OperationalError as err:
                 print(err)
                 print('Ensure MySQL Server is running.')
                 print('Ensure host, user, password, and db information are correct')
-                exit(1)
+                sys.exit(1)
 
     def retrieve_article_text(self, topics: list):
         #translate topic names into topic ids
