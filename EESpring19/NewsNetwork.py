@@ -12,7 +12,18 @@ class NewsNetwork:
         self.topics = topics
         self.conn = MySQLConn()
 
-    def _blahut_arimoto(self, Q: np.matrix, epsilon: float=0.01, max_iter=1000) -> (np.array, np.array):
+    def build_document_word_communication_system(self):
+        channel = self._build_word_probability_matrix()
+        Q = np.matrix(channel.values)
+        p, q = self._blahut_arimoto(Q)
+        joint_dist = (channel.values.T * p).T
+        product = np.outer(p, q)
+        I = self._kl_divergence(joint_dist, product)
+        numerator = (channel.values.T * p).T
+        phi = (numerator.T / q).T
+        return p, channel, q, I, phi
+
+    def _blahut_arimoto(self, Q: np.matrix, epsilon: float=0.001, max_iter=1000) -> (np.array, np.array):
         """
         Implementation of the Blahut Arimoto algorithm. This Algorithm maximizes the channel capacity and finds the
         corresponding input and output distributions.
@@ -27,22 +38,27 @@ class NewsNetwork:
         q = np.matmul(p, Q)
         q_old = np.array([np.inf] * Q.shape[1])
         count = 0
+
         while(np.linalg.norm(q_old - q) >= epsilon) and count < max_iter:
             count = count + 1
             q_old = q
             p_old = p
             D = [None] * len(p_old)
+
             for j in range(len(p_old)):
                 D[j] = p[j] * np.exp(self._kl_divergence(np.array(Q[j])[0], np.array(q)[0]))
+
             d_sum = np.sum(D)
+
             for i in range(len(p_old)):
                 p[i] = D[i]/d_sum
 
             q = np.matmul(p, Q)
 
+        print(count)
         # use bayes rule to calculate phi with Q,p,q
         # phi = (p Q) / q and it isn't matrix multiplication its component wise
-        return p, q
+        return p, np.array(q)[0]
 
     @staticmethod
     def _kl_divergence(dist1: np.array, dist2: np.array):
@@ -50,7 +66,7 @@ class NewsNetwork:
         vector = dist1 * np.log(dist2 / dist1)
         warnings.filterwarnings("default", category=RuntimeWarning)
         vector = np.nan_to_num(vector)
-        return vector.sum()
+        return - vector.sum()
 
     def _build_word_probability_matrix(self) -> pd.DataFrame:
         """
