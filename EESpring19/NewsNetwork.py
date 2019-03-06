@@ -17,8 +17,7 @@ class NewsNetwork:
         Q = np.matrix(channel.values)
         p, q = self._blahut_arimoto(Q)
         joint_dist = (channel.values.T * p).T
-        product = np.outer(p, q)
-        I = self._kl_divergence(joint_dist, product)
+        I = self._mutual_information(joint_dist, p, q)
         numerator = (channel.values.T * p).T
         phi = (numerator.T / q).T
         return p, channel, q, I, phi
@@ -67,6 +66,12 @@ class NewsNetwork:
         warnings.filterwarnings("default", category=RuntimeWarning)
         vector = np.nan_to_num(vector)
         return - vector.sum()
+
+    def _mutual_information(self, joint: np.array, dist1: np.array, dist2: np.array):
+        product = np.outer(dist1, dist2)
+        I = self._kl_divergence(joint, product)
+        return I
+
 
     def _build_word_probability_matrix(self) -> pd.DataFrame:
         """
