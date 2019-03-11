@@ -9,6 +9,7 @@ from EESpring19.MySQLConn import MySQLConn
 class NewsNetwork:
 
     def __init__(self, topics: list):
+        assert(type(topics) is list)
         self.topics = topics
         self.conn = MySQLConn()
 
@@ -19,8 +20,20 @@ class NewsNetwork:
         joint_dist = (channel.values.T * p).T
         I = self._mutual_information(joint_dist, p, q)
         numerator = (channel.values.T * p).T
-        phi = (numerator.T / q).T
-        return p, channel, q, I, phi
+        phi = (numerator / q).T
+        #return p, channel, q, I, phi
+        doc_entropy = self._entropy(p)
+        phi_entropy = np.apply_along_axis(self._entropy, 1, phi)
+        conditional_mutual_information = doc_entropy - phi_entropy
+        return conditional_mutual_information
+
+    def _entropy(self, dist: np.array):
+        warnings.filterwarnings("ignore", category=RuntimeWarning)
+        dist_log = np.log(dist)
+        warnings.filterwarnings("default", category=RuntimeWarning)
+        dist_log = np.nan_to_num(dist_log)
+        return -(dist_log * dist).sum()
+
 
     def _blahut_arimoto(self, Q: np.matrix, epsilon: float=0.001, max_iter=1000) -> (np.array, np.array):
         """
@@ -98,7 +111,7 @@ class NewsNetwork:
         article_series = article_series.str.replace("[-,.\"\']", "")
         article_series = article_series.str.replace("[^\w\s]", " ")
 
-        print("_build_word_probability_matrix: formatted centent text")
+        print("_build_word_probability_matrix: formatted content text")
 
         # unique_article_words is a list of tuples with (article id, unique values)
         unique_article_words = [(id_, np.unique(str.split(article_series[id_]))) for id_ in article_series.index]
