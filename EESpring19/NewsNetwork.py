@@ -13,19 +13,52 @@ class NewsNetwork:
         self.topics = topics
         self.conn = MySQLConn()
 
+    def build_news_network(self):
+        p, channel, q, phi = self.build_document_word_communication_system(self)
+        informative_indices = self.keep_words(p, phi)#add threshold
+        filtered_channel = channel.iloc[:, informative_indices]
+
+
     def build_document_word_communication_system(self):
         channel = self._build_word_probability_matrix()
         Q = np.matrix(channel.values)
         p, q = self._blahut_arimoto(Q)
         joint_dist = (channel.values.T * p).T
-        I = self._mutual_information(joint_dist, p, q)
+        #I = self._mutual_information(joint_dist, p, q)
         numerator = (channel.values.T * p).T
         phi = (numerator / q).T
-        #return p, channel, q, I, phi
+        return p, channel, q, phi
+
+    def keep_words(self, p, phi, threshold=2):
+        """
+        takes in processed variables about the data. Calculates the conditional mutual information in order to determine which
+        words are informative. This is done by looking for words that exceed the threshold. Informative in this case means a word
+        helps identify the document it is in.
+        :param p: probability of articles
+        :param phi: probability of document given word
+        :param threshold: conditional mutual information threshold to be considered informative
+        :return: indices for informative words
+        """
         doc_entropy = self._entropy(p)
         phi_entropy = np.apply_along_axis(self._entropy, 1, phi)
         conditional_mutual_information = doc_entropy - phi_entropy
-        return conditional_mutual_information
+        cmi_series = pd.Series(conditional_mutual_information)
+        return cmi_series[cmi_series>threshold].index.values
+        #return conditional_mutual_information
+
+    def build_document_relation_matrix(self, channel):
+        pass
+
+    def min_addition(self, dist1: np.array, dist2: np.array):
+        dist2 = dist2.T
+        ret = np.zeros((dist1.shape[0],dist2.shape[1]))
+        for i in range(dist1.shape[0]):
+            for j in range(dist2.shape[1]):
+                for k in range(dist2.shape[0]):
+                    ret[i][j] += min(dist1[i][k], dist2[k][j])
+        return ret
+
+
 
     def _entropy(self, dist: np.array):
         warnings.filterwarnings("ignore", category=RuntimeWarning)
