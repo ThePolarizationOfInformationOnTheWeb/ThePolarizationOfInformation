@@ -34,7 +34,6 @@ class NewsNetwork:
         dist_log = np.nan_to_num(dist_log)
         return -(dist_log * dist).sum()
 
-
     def _blahut_arimoto(self, Q: np.matrix, epsilon: float=0.001, max_iter=1000) -> (np.array, np.array):
         """
         Implementation of the Blahut Arimoto algorithm. This Algorithm maximizes the channel capacity and finds the
@@ -74,6 +73,15 @@ class NewsNetwork:
 
     @staticmethod
     def _kl_divergence(dist1: np.array, dist2: np.array):
+        """
+        This method calculates the Kullback Liebler (KL) divergence of two distributions. The KL divergence is the
+        difference between the cross entropy and the entropy. It measures the similarity (or dissimilarity) between two
+        probability distributions. The cross entropy is a measure of the expected number of bits per source symbol if
+        one were to estimate the distribution dist_1 with dist_2. The entropy is the
+        :param dist1:
+        :param dist2:
+        :return:
+        """
         warnings.filterwarnings("ignore", category=RuntimeWarning)
         vector = dist1 * np.log(dist2 / dist1)
         warnings.filterwarnings("default", category=RuntimeWarning)
@@ -84,7 +92,6 @@ class NewsNetwork:
         product = np.outer(dist1, dist2)
         I = self._kl_divergence(joint, product)
         return I
-
 
     def _build_word_probability_matrix(self) -> pd.DataFrame:
         """
