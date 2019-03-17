@@ -1,5 +1,5 @@
 import networkx as nx
-from Clusterer import Clusterer
+from EESpring19.Clusterer import Clusterer
 
 
 class PolarityCalculator:

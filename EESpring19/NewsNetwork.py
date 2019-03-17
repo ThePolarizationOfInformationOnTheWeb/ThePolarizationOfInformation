@@ -12,19 +12,26 @@ class NewsNetwork:
         assert(type(topics) is list)
         self.topics = topics
         self.conn = MySQLConn()
+        self.adj = None
 
     def build_news_network(self):
-        p, channel, q, phi = self.build_document_word_communication_system(self)
-        informative_indices = self.keep_words(p, phi)#add threshold
+        p, channel, q, phi = self.build_document_word_communication_system()
+        informative_indices = self.keep_words(p, phi)  # add threshold
         filtered_channel = channel.iloc[:, informative_indices]
 
-
     def build_document_word_communication_system(self):
-        channel = self._build_word_probability_matrix()
+        """
+        This method will build the document to word communications system where the channel is the conditional
+        probability of a word given the document, the input distribution, p, is the distribution of the words, and the
+        output distribution is the distribution of unique words. The channel of the system is fixed and is the data and
+        the input and output distributions are constructed using the Blahut-Arimoto algorithm.
+        :return: The parameters of the system p, channel, q, and phi. phi is the conditional probability
+        """
+        channel = self._build_channel()
         Q = np.matrix(channel.values)
         p, q = self._blahut_arimoto(Q)
-        joint_dist = (channel.values.T * p).T
-        #I = self._mutual_information(joint_dist, p, q)
+        # joint_dist = (channel.values.T * p).T
+        # I = self._mutual_information(joint_dist, p, q)
         numerator = (channel.values.T * p).T
         phi = (numerator / q).T
         return p, channel, q, phi
@@ -43,10 +50,9 @@ class NewsNetwork:
         phi_entropy = np.apply_along_axis(self._entropy, 1, phi)
         conditional_mutual_information = doc_entropy - phi_entropy
         cmi_series = pd.Series(conditional_mutual_information)
-        return cmi_series[cmi_series>threshold].index.values
-        #return conditional_mutual_information
+        return cmi_series[(cmi_series > threshold)].index.values
 
-    def build_document_relation_matrix(self, channel):
+    def build_document_adjacency_matrix(self, channel):
         pass
 
     def min_addition(self, dist1: np.array, dist2: np.array):
@@ -58,8 +64,6 @@ class NewsNetwork:
                     ret[i][j] += min(dist1[i][k], dist2[k][j])
         return ret
 
-
-
     def _entropy(self, dist: np.array):
         warnings.filterwarnings("ignore", category=RuntimeWarning)
         dist_log = np.log(dist)
@@ -69,8 +73,9 @@ class NewsNetwork:
 
     def _blahut_arimoto(self, Q: np.matrix, epsilon: float=0.001, max_iter=1000) -> (np.array, np.array):
         """
-        Implementation of the Blahut Arimoto algorithm. This Algorithm maximizes the channel capacity and finds the
-        corresponding input and output distributions.
+        Implementation of the Blahut Arimoto algorithm. This algorithm finds the input and output distributions which
+        maximizes the channel capacity of the communication system, which is the mutual information between the input
+        and output.
         :param Q: The conditional probability matrix describing the conditional probability of the input given the
         output. In the context of news articles: the probability of a word given and article, i.e.
         Q width is number of words, and Q height is number of documents.
@@ -110,7 +115,7 @@ class NewsNetwork:
         This method calculates the Kullback Liebler (KL) divergence of two distributions. The KL divergence is the
         difference between the cross entropy and the entropy. It measures the similarity (or dissimilarity) between two
         probability distributions. The cross entropy is a measure of the expected number of bits per source symbol if
-        one were to estimate the distribution dist_1 with dist_2. The entropy is the
+        one were to estimate the distribution dist_1 with dist_2.
         :param dist1:
         :param dist2:
         :return:
@@ -126,22 +131,16 @@ class NewsNetwork:
         I = self._kl_divergence(joint, product)
         return I
 
-    def _build_word_probability_matrix(self) -> pd.DataFrame:
+    def _build_channel(self) -> pd.DataFrame:
         """
         Method for building the conditional probability matrix between the articles and words.
         This matrix is used in the Blahut Arimoto Algorithm.
-        :return: Q: The conditional probability matrix describing the probability of a word j given the document i.
-        :type: Q: pd.DataFrame
+        :return: channel_df: The conditional probability matrix describing the probability of a word j given the document i.
+        :type: channel_df: pd.DataFrame
         """
         articles = self.conn.retrieve_article_text(self.topics)
 
-        print("_build_word_probability_matrix: retrieved articles")
-
-        def unique_frequency(col):
-            return article_series.str.count('\\b{}\\b'.format(col.name))
-
-        def total_frequency(row):
-            return row / len(article_series[row.name].split())
+        print("_build_channel: retrieved articles")
 
         # remove non letters and ensure all are lowercase letters
         # default replace with space
@@ -151,18 +150,25 @@ class NewsNetwork:
         article_series = article_series.str.replace("[-,.\"\']", "")
         article_series = article_series.str.replace("[^\w\s]", " ")
 
-        print("_build_word_probability_matrix: formatted content text")
+        print("_build_channel: formatted content text")
 
         # unique_article_words is a list of tuples with (article id, unique values)
         unique_article_words = [(id_, np.unique(str.split(article_series[id_]))) for id_ in article_series.index]
         words = [word_list for article_id, word_list in unique_article_words]
         unique_words = reduce(np.union1d, words)
+        
+        print("_build_channel: found unique words")
+        
+        def unique_frequency(col):
+            return article_series.str.count('\\b{}\\b'.format(col.name))
 
-        Q = pd.DataFrame(data=0, index=article_series.index, columns=unique_words)
-        Q = Q.apply(unique_frequency, axis='rows')
+        def total_frequency(row):
+            return row / len(article_series[row.name].split())
 
-        print("_build_word_probability_matrix: calculated unique word frequencies for articles.")
+        channel_df = pd.DataFrame(data=0, index=article_series.index, columns=unique_words)
+        channel_df = channel_df.apply(unique_frequency, axis='rows')
+        channel_df = channel_df.apply(total_frequency, axis='columns')
+        
+        print("_build_channel: calculated unique word frequencies for articles.")
 
-        Q = Q.apply(total_frequency, axis='columns')
-
-        return Q
+        return channel_df

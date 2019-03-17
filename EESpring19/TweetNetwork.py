@@ -2,8 +2,8 @@ import pandas as pd
 import numpy as np
 import math
 import sys
-from Clusterer import Clusterer
-from TweetFeatureExtractor import TweetFeatureExtractor
+from EESpring19.Clusterer import Clusterer
+from EESpring19.TweetFeatureExtractor import TweetFeatureExtractor
 from scipy import spatial
 
 

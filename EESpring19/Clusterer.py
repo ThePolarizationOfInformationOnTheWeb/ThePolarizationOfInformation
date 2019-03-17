@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
-from TweetFeatureExtractor import TweetFeatureExtractor
-from BackwardPath import back_path_clustering, transval
+from EESpring19.TweetFeatureExtractor import TweetFeatureExtractor
+from EESpring19.BackwardPath import back_path_clustering, transval
 
 
 class Clusterer:
