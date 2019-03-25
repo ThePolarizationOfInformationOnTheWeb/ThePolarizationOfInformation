@@ -23,6 +23,7 @@ class WordFilter:
 
         # Blahut Arimoto attributes
         self.channel_df = None  # Conditional probability of word given document
+        self.word_frequency_df = None  # Conditional probability of word given document
         self.phi = None  # Conditional probability of document given word
         self.p = None  # Probability of document
         self.q = None  # Probability of word
@@ -49,6 +50,9 @@ class WordFilter:
                 return self.keep_words
 
         return self.keep_words
+
+    def get_document_word_frequency_df(self):
+        return self.word_frequency_df
 
     def _build_document_word_communication_system(self):
         """
@@ -127,13 +131,14 @@ class WordFilter:
         def unique_frequency(col):
             return self.documents.str.count('\\b{}\\b'.format(col.name))
 
-        def total_frequency(row):
+        def normalize(row):
             return row / len(self.documents[row.name].split())
 
         channel_df = pd.DataFrame(data=0, index=self.documents.index, columns=unique_words)
-        channel_df = channel_df.apply(unique_frequency, axis='rows')
-        channel_df = channel_df.apply(total_frequency, axis='columns')
+        word_frequency_df = channel_df.apply(unique_frequency, axis='rows')
+        channel_df = word_frequency_df.apply(normalize, axis='columns')
 
         print("_build_channel: calculated unique word frequencies for articles.")
 
+        self.word_frequency_df = word_frequency_df
         self.channel_df = channel_df
