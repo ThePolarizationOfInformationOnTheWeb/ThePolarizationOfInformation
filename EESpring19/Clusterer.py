@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-
+from EESpring19.BackwardPath import back_path_clustering, transval
 
 class Clusterer:
 
@@ -12,6 +12,7 @@ class Clusterer:
         self.adj = network_df.values
         self.node_id_map = pd.Series(dict(zip(list(range(network_df.shape[0])), network_df.index.tolist())))
         self.clusterings = None
+        self.back_path_critical_times = None
 
     def update_network(self, new_network_df) -> None:
         """
@@ -21,12 +22,24 @@ class Clusterer:
         self.adj = new_network_df.values
         self.node_id_map = pd.Series(dict(zip(list(range(new_network_df.shape[0])), new_network_df.index.tolist())))
         self.clusterings = None
+        self.back_path_critical_times = None
 
-    def get_clustering(self, method: str='backward_path')->np.array:
+    def get_clustering(self, clusterMethod: str='backward_path', selectionMethod: str='first')->np.array:
         """
 
         :param method: Clustering method to be used. Default is the backward path algorithm
         :return: An np.array of the clusterings. An array of arrays containing ids
         """
-        # ToDo
-        pass
+        if self.clusterings is None:
+            if clusterMethod is 'backward_path':
+                TranList, TranCumul = transval(self.adj)
+                # update so adj is unweighted, for BackwardPath alg
+                adj = [[1 if self.adj[i][j] > 0 else 0 for j in range(len(self.adj))]
+                       for i in range(len(self.adj))]
+                self.clusterings, self.back_path_critical_times = back_path_clustering(adj, TranList, TranCumul)
+
+        if selectionMethod is 'first':
+            return self.clusterings[0]
+
+        if selectionMethod is 'all':
+            return self.clusterings
