@@ -1,0 +1,11 @@
+import numpy as np
+import pandas as pd
+from EESpring19.NewsNetwork import NewsNetwork
+
+topics = ['government shutdown']
+print('Creating Network Object')
+Network = NewsNetwork(topics)
+print('Building News Network')
+NetworkDF = Network.build_news_network()
+print('Printing Network Data Frame')
+print(NetworkDF)

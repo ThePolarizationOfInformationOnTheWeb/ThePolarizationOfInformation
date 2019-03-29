@@ -62,8 +62,9 @@ class WordFilter:
         :return: The parameters of the system p, channel, q, and phi. phi is the conditional probability
         """
         # build channel and calculate p and q using Blahut Arimoto
-        self._build_channel()
-        self._blahut_arimoto()
+        if(self.phi, self.q, self.p) == (None, None, None):
+            self._build_channel()
+            self._blahut_arimoto()
         # joint_dist = (channel.values.T * p).T
         # I = self._mutual_information(joint_dist, p, q)
 
@@ -71,6 +72,7 @@ class WordFilter:
         numerator = (self.channel_df.values.T * self.p).T
         phi = (numerator / self.q).T
         self.phi = phi
+
 
     def _blahut_arimoto(self, epsilon: float=0.001, max_iter=1000)->None:
         """
@@ -107,8 +109,27 @@ class WordFilter:
         print("WordFilter.WordFilter._blahut_arimoto: {} Iterations for Blahut Arimoto".format(count))
         self.p, self.q = p, np.array(q)[0]
 
-    def combine_documents(self):
-        pass
+    def combine_documents(self, clustering: np.array):
+
+        def normalize(row):
+            return row / len(self.documents[row.name].split())
+
+        T = pd.Series()
+        index = 0
+        new_word_frequency_df = pd.DataFrame()
+        for cluster in clustering:
+            index += 1
+            T.append(pd.Series({'t_{}'.format(index): self.documents[cluster].str.cat(sep=' ')}))
+            temp_series = T.loc[cluster].sum()
+            temp_series.name = 't_{}'.format(index)
+            new_word_frequency_df.append(temp_series)
+        self.documents = T
+        ##update word_frequency_df and channel_df
+        ##sum words frequency
+        self.word_frequency_df = new_word_frequency_df
+        self.channel_df = new_word_frequency_df.apply(normalize, axis='columns')
+        (self.phi, self.q, self.p) = (None, None, None)
+        self._build_document_word_communication_system()
 
     def _build_channel(self)->None:
         """
