@@ -28,8 +28,7 @@ class WordFilter:
         self.p = None  # Probability of document
         self.q = None  # Probability of word
 
-    def get_keep_words(self, method: str='Blahut Arimito', threshold: float=2, epsilon: float=0.001,
-                       max_iter=1000)->np.array:
+    def get_keep_words(self, method: str='Blahut Arimito', threshold: float=2)->np.array:
         """
         Returns the array of words to keep
         :param method: method to use for the word filter. Defaults to Blahut Arimito.

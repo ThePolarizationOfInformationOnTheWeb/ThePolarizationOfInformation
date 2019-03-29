@@ -15,16 +15,16 @@ class NewsNetwork:
         self.articles = self.conn.retrieve_article_text(self.topics)
         self.WordFilter = WordFilter(self.articles)
 
-    def build_news_network(self):
+    def build_news_network(self) -> pd.DataFrame:
         pass
 
     def build_document_adjacency_matrix(self, method='word_union') -> pd.DataFrame:
-
         if method is 'word_union':
             informative_words = self.WordFilter.get_keep_words()  # add threshold
             word_frequency_df = self.WordFilter.get_document_word_frequency_df().loc[:, informative_words]
             return self._jaccard_similarity(word_frequency_df)
         else:
+            print('NewsNetwork:build_document_adjacency_matrix: method {} not defined'.format(method))
             return None
 
     def _jaccard_similarity(self, word_frequency_df) -> pd.DataFrame:
@@ -40,7 +40,7 @@ class NewsNetwork:
 
     def _min_addition(self, dist1: np.array, dist2: np.array):
         """
-
+        Calculates the sum of two arrays defined by component wise min. Ex: [1,3,4,0] + [0,2,5,6] = [0,2,4,0]
         :param dist1:
         :param dist2:
         :return:
