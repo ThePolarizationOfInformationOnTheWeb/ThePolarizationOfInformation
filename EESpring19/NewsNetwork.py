@@ -7,10 +7,10 @@ from EESpring19.WordFilter import WordFilter
 
 class NewsNetwork:
 
-    def __init__(self, topics: list):
+    def __init__(self, topics: list, path='./EESpring19/keys/SQL_Login.yml'):
         assert(type(topics) is list)
         self.topics = topics
-        self.conn = MySQLConn()
+        self.conn = MySQLConn(path)
         self.adj = None
         self.articles = self.conn.retrieve_article_text(self.topics)
         self.WordFilter = WordFilter(self.articles)

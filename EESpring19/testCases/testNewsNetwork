@@ -4,7 +4,7 @@ from EESpring19.NewsNetwork import NewsNetwork
 
 topics = ['government shutdown']
 print('Creating Network Object')
-Network = NewsNetwork(topics)
+Network = NewsNetwork(topics, "../../EESpring19/keys/SQL_Login.yml")
 print('Building News Network')
 NetworkDF = Network.build_news_network()
 print('Printing Network Data Frame')

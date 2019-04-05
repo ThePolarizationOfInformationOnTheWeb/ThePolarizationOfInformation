@@ -5,10 +5,10 @@ import sys
 
 class MySQLConn:
 
-    def __init__(self):
+    def __init__(self, path='./EESpring19/keys/SQL_Login.yml'):
         self._conn = None
 
-        with open("./EESpring19/keys/SQL_Login.yml", 'r') as stream:
+        with open(path, 'r') as stream:
             try:
                 mysql_login = yaml.load(stream)['MySQL_DB']
                 self._conn = pymysql.connect(host=mysql_login['host'],
