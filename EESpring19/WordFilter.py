@@ -23,8 +23,8 @@ class WordFilter:
         self.topic_document_map = {'t_{}'.format(i): ['a_{}'.format(i)] for i in range(self.documents.shape[0])}
 
         # Blahut Arimoto attributes
-        self.channel_df = None  # Conditional probability of word given document
-        self.word_frequency_df = None  # Conditional probability of word given document
+        self.channel_df = pd.DataFrame()  # Conditional probability of word given document
+        self.word_frequency_df = pd.DataFrame()  # Conditional probability of word given document
         self.phi = None  # Conditional probability of document given word
         self.p = None  # Probability of document
         self.q = None  # Probability of word
@@ -56,7 +56,7 @@ class WordFilter:
         Returns
         :return:
         """
-        if not self.word_frequency_df:
+        if self.word_frequency_df.empty:
             self._build_channel()
         return self.word_frequency_df
 
@@ -72,7 +72,7 @@ class WordFilter:
         :return: None
         """
         # check if channel and word_frequency_df are valid
-        if (self.channel_df, self.word_frequency_df) == (None, None):
+        if self.channel_df.empty or self.word_frequency_df.empty:
             self._build_channel()
 
         # build channel and calculate p and q using Blahut Arimoto
@@ -125,18 +125,18 @@ class WordFilter:
         :param clustering: array of arrays of documents
         :return:
         """
-        if (self.word_frequency_df, self.channel_df) == (None, None):
+        if self.word_frequency_df.empty or self.channel_df.empty:
             self._build_channel()
 
         def normalize(row):
-            return row / len(self.word_frequency_df.loc[row.name, :].sum())
+            return row / self.word_frequency_df.loc[row.name, :].sum()
 
         new_topic_document_map = {'t_{}'.format(i): cluster for i, cluster in enumerate(clustering)}
         new_word_frequency_df = pd.DataFrame(columns=self.word_frequency_df.columns)
         for topic in new_topic_document_map:
             temp_series = self.word_frequency_df.loc[new_topic_document_map[topic], :].sum()
             temp_series.name = topic
-            new_word_frequency_df.append(temp_series)
+            new_word_frequency_df = new_word_frequency_df.append(temp_series)
         # update word_frequency_df and channel_df
         # sum words frequency
         self.topic_document_map = new_topic_document_map
