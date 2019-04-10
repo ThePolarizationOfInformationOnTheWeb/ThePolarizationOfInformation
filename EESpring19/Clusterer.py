@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from EESpring19.BackwardPath import back_path_clustering, transval
 
+
 class Clusterer:
 
     def __init__(self, network_df: pd.DataFrame):
@@ -26,7 +27,6 @@ class Clusterer:
 
     def get_clustering(self, clusterMethod: str='backward_path', selectionMethod: str='first')->np.array:
         """
-
         :param method: Clustering method to be used. Default is the backward path algorithm
         :return: An np.array of the clusterings. An array of arrays containing ids
         """
@@ -43,3 +43,5 @@ class Clusterer:
 
         if selectionMethod is 'all':
             return self.clusterings
+
+
