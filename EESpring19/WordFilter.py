@@ -20,6 +20,7 @@ class WordFilter:
         print("WordFilter.__init__: formatted document text")
 
         self.keep_words = None
+        self.topic_document_map = {'t_{}'.format(i): ['a_{}'.format(i)] for i in range(self.documents.shape[0])}
 
         # Blahut Arimoto attributes
         self.channel_df = None  # Conditional probability of word given document
@@ -28,7 +29,7 @@ class WordFilter:
         self.p = None  # Probability of document
         self.q = None  # Probability of word
 
-    def get_keep_words(self, method: str='Blahut Arimito', threshold: float=2)->np.array:
+    def get_keep_words(self, method: str='Blahut Arimito', threshold: float=1)->np.array:
         """
         Returns the array of words to keep
         :param method: method to use for the word filter. Defaults to Blahut Arimito.
@@ -51,28 +52,37 @@ class WordFilter:
         return self.keep_words
 
     def get_document_word_frequency_df(self):
+        """
+        Returns
+        :return:
+        """
+        if not self.word_frequency_df:
+            self._build_channel()
         return self.word_frequency_df
 
     def _build_document_word_communication_system(self):
         """
-        This method will build the document to word communications system where the channel is the conditional
-        probability of a word given the document, the input distribution, p, is the distribution of the words, and the
-        output distribution is the distribution of unique words. The channel of the system is fixed and is the data and
-        the input and output distributions are constructed using the Blahut-Arimoto algorithm.
-        :return: The parameters of the system p, channel, q, and phi. phi is the conditional probability
+        This method will build the document to word communications system where
+        - the channel is the conditional probability of a word given the document,
+        - the input distribution, p, is the distribution of the articles,
+        - and the output distribution is the distribution over the unique words.
+        - phi is the conditional probability of a document given a word.
+        The channel of the system is fixed and is the data and the input and output distributions are constructed using
+        the Blahut-Arimoto algorithm. The parameters of the system are update p, channel, q, and phi.
+        :return: None
         """
+        # check if channel and word_frequency_df are valid
+        if (self.channel_df, self.word_frequency_df) == (None, None):
+            self._build_channel()
+
         # build channel and calculate p and q using Blahut Arimoto
         if(self.phi, self.q, self.p) == (None, None, None):
-            self._build_channel()
             self._blahut_arimoto()
-        # joint_dist = (channel.values.T * p).T
-        # I = self._mutual_information(joint_dist, p, q)
 
         # Calculate phi using bayes rule
         numerator = (self.channel_df.values.T * self.p).T
         phi = (numerator / self.q).T
         self.phi = phi
-
 
     def _blahut_arimoto(self, epsilon: float=0.001, max_iter=1000)->None:
         """
@@ -110,22 +120,26 @@ class WordFilter:
         self.p, self.q = p, np.array(q)[0]
 
     def combine_documents(self, clustering: np.array):
+        """
+        given a clustering of documents, combine documents and update communication system.
+        :param clustering: array of arrays of documents
+        :return:
+        """
+        if (self.word_frequency_df, self.channel_df) == (None, None):
+            self._build_channel()
 
         def normalize(row):
-            return row / len(self.documents[row.name].split())
+            return row / len(self.word_frequency_df.loc[row.name, :].sum())
 
-        T = pd.Series()
-        index = 0
-        new_word_frequency_df = pd.DataFrame()
-        for cluster in clustering:
-            index += 1
-            T.append(pd.Series({'t_{}'.format(index): self.documents[cluster].str.cat(sep=' ')}))
-            temp_series = T.loc[cluster].sum()
-            temp_series.name = 't_{}'.format(index)
+        new_topic_document_map = {'t_{}'.format(i): cluster for i, cluster in enumerate(clustering)}
+        new_word_frequency_df = pd.DataFrame(columns=self.word_frequency_df.columns)
+        for topic in new_topic_document_map:
+            temp_series = self.word_frequency_df.loc[new_topic_document_map[topic], :].sum()
+            temp_series.name = topic
             new_word_frequency_df.append(temp_series)
-        self.documents = T
-        ##update word_frequency_df and channel_df
-        ##sum words frequency
+        # update word_frequency_df and channel_df
+        # sum words frequency
+        self.topic_document_map = new_topic_document_map
         self.word_frequency_df = new_word_frequency_df
         self.channel_df = new_word_frequency_df.apply(normalize, axis='columns')
         (self.phi, self.q, self.p) = (None, None, None)
