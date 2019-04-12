@@ -47,6 +47,8 @@ class MyTest(unittest.TestCase):
         document_word_frequency_df = self.word_filter.get_document_word_frequency_df()
         print('document_word_frequency_df: ')
         print(document_word_frequency_df)
+        # new data frame index only contains clustered topics
+        assert(document_word_frequency_df.index.shape[0] == len(cluster))
 
 if __name__ == '__main__':
     unittest.main()
