@@ -29,7 +29,7 @@ class WordFilter:
         self.p = None  # Probability of document
         self.q = None  # Probability of word
 
-    def get_keep_words(self, method: str='Blahut Arimito', threshold: float=1)->np.array:
+    def get_keep_words(self, method: str='Blahut Arimito', threshold: float=0.25)->np.array:
         """
         Returns the array of words to keep
         :param method: method to use for the word filter. Defaults to Blahut Arimito.
@@ -44,7 +44,10 @@ class WordFilter:
                 phi_entropy = np.apply_along_axis(entropy, 1, self.phi)
                 conditional_mutual_information = doc_entropy - phi_entropy
                 cmi_series = pd.Series(conditional_mutual_information)
-                self.keep_words = self.channel_df.columns[cmi_series[(cmi_series > threshold)].index.values]
+                print('CMI SERIES')
+                print(cmi_series)
+                self.keep_words = self.channel_df.columns[cmi_series[
+                    (cmi_series >= (np.log(threshold * len(self.topic_document_map))))].index.values]
             else:
                 print('WordFilter.WordFilter.get_keep_words: method: {} is not implemented.'.format(method))
                 return self.keep_words
@@ -171,8 +174,6 @@ class WordFilter:
         channel_df = pd.DataFrame(data=0, index=self.documents.index, columns=unique_words)
         word_frequency_df = channel_df.apply(unique_frequency, axis='rows')
         channel_df = word_frequency_df.apply(normalize, axis='columns')
-
-        print("_build_channel: calculated unique word frequencies for articles.")
 
         self.word_frequency_df = word_frequency_df
         self.channel_df = channel_df

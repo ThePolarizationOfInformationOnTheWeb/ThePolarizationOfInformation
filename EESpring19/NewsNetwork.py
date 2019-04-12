@@ -13,7 +13,7 @@ class NewsNetwork:
         self.conn = MySQLConn(path)
         self.adj = None
         self.articles = self.conn.retrieve_article_text(self.topics)
-        self.WordFilter = WordFilter(self.articles)
+        self.WordFilter = WordFilter(pd.Series(self.articles))
 
     def build_news_network(self) -> pd.DataFrame:
         pass
@@ -21,8 +21,13 @@ class NewsNetwork:
     def build_document_adjacency_matrix(self, method='word_union') -> pd.DataFrame:
         if method is 'word_union':
             informative_words = self.WordFilter.get_keep_words()  # add threshold
-            word_frequency_df = self.WordFilter.get_document_word_frequency_df().loc[:, informative_words]
-            return self._jaccard_similarity(word_frequency_df)
+            if(informative_words.shape[0] != 0):
+                word_frequency_df = self.WordFilter.get_document_word_frequency_df().loc[:, informative_words]
+                #TODO: Account for articles that have no informative words
+                return self._jaccard_similarity(word_frequency_df)
+            else:
+                print('NOTE: No Informative Words Found')
+                return np.eye(len(self.articles))
         else:
             print('NewsNetwork:build_document_adjacency_matrix: method {} not defined'.format(method))
             return None
@@ -33,7 +38,11 @@ class NewsNetwork:
         :param word_frequency_df:
         :return:
         """
+        print('word_frequency_df')
+        print(word_frequency_df)
         min = self._min_addition(word_frequency_df.values, word_frequency_df.values)
+        print('min addition')
+        print(min)
         jaccard_array = np.array([np.array([elem / (min[i][i] + min[j][j] - elem) for j, elem in enumerate(row)])
                                   for i, row in enumerate(min)])
         return pd.DataFrame(jaccard_array, index=word_frequency_df.index, columns=word_frequency_df.index)
