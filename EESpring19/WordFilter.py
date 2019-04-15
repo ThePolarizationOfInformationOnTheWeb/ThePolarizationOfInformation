@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import copy
 from functools import reduce
 from EESpring19.Information import entropy, mutual_information, kl_divergence
 
@@ -29,6 +30,15 @@ class WordFilter:
         self.p = None  # Probability of document
         self.q = None  # Probability of word
 
+    def get_word_distribution(self):
+        return copy.copy(self.q)
+
+    def get_topic_distribution(self):
+        return copy.copy(self.p)
+
+    def get_channel_dataframe(self):
+        return copy.deepcopy(self.channel_df)
+
     def get_keep_words(self, method: str='Blahut Arimito', threshold: float=0.25)->np.array:
         """
         Returns the array of words to keep
@@ -44,8 +54,6 @@ class WordFilter:
                 phi_entropy = np.apply_along_axis(entropy, 1, self.phi)
                 conditional_mutual_information = doc_entropy - phi_entropy
                 cmi_series = pd.Series(conditional_mutual_information)
-                print('CMI SERIES')
-                print(cmi_series)
                 self.keep_words = self.channel_df.columns[cmi_series[
                     (cmi_series >= (np.log2(threshold * len(self.topic_document_map))))].index.values]
             else:

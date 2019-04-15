@@ -3,7 +3,7 @@ import pandas as pd
 
 from EESpring19.MySQLConn import MySQLConn
 from EESpring19.WordFilter import WordFilter
-
+from EESpring19.Information import mutual_information
 
 class NewsNetwork:
 
@@ -23,14 +23,17 @@ class NewsNetwork:
             informative_words = self.WordFilter.get_keep_words()  # add threshold
             if(informative_words.shape[0] != 0):
                 word_frequency_df = self.WordFilter.get_document_word_frequency_df().loc[:, informative_words]
-                #TODO: Account for articles that have no informative words
+                #TODO: Account for when a single article has no informative words
                 return self._jaccard_similarity(word_frequency_df)
             else:
                 print('NOTE: No Informative Words Found')
                 return np.eye(len(self.articles))
         else:
-            print('NewsNetwork:build_document_adjacency_matrix: method {} not defined'.format(method))
-            return None
+            if method is 'mutual_information':
+                return self._information_similarity()
+            else:
+                print('NewsNetwork:build_document_adjacency_matrix: method {} not defined'.format(method))
+                return None
 
     def _jaccard_similarity(self, word_frequency_df) -> pd.DataFrame:
         """
@@ -38,14 +41,24 @@ class NewsNetwork:
         :param word_frequency_df:
         :return:
         """
-        print('word_frequency_df')
-        print(word_frequency_df)
         min = self._min_addition(word_frequency_df.values, word_frequency_df.values)
-        print('min addition')
-        print(min)
         jaccard_array = np.array([np.array([elem / (min[i][i] + min[j][j] - elem) for j, elem in enumerate(row)])
                                   for i, row in enumerate(min)])
         return pd.DataFrame(jaccard_array, index=word_frequency_df.index, columns=word_frequency_df.index)
+
+    def _information_similarity(self):
+        channel = self.WordFilter.get_channel_dataframe()
+        p = self.WordFilter.get_topic_distribution()
+        adj = pd.DataFrame(data=0,columns=channel.index, index=channel.index)
+        for row_index in range(adj.index.shape[0]):
+            for col_index in range(adj.index.shape[0]):
+                t = p[row_index] + p[col_index]
+                p_prime = [p[row_index]/t, p[col_index]/t]
+                mi = mutual_information()#TODO Fix this line
+                adj.iloc[row_index, col_index] = mi
+                adj.iloc[col_index, row_index] = mi
+
+        return adj
 
     def _min_addition(self, dist1: np.array, dist2: np.array):
         """

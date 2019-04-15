@@ -1,11 +1,15 @@
 import numpy as np
 import pandas as pd
 from EESpring19.NewsNetwork import NewsNetwork
+from EESpring19.Clusterer import Clusterer
 
 topics = ['test']
 print('Creating Network Object')
 Network = NewsNetwork(topics, "../../EESpring19/keys/SQL_Login.yml")
 print('Building Document Adjacency Matrix')
-dam = Network.build_document_adjacency_matrix()
+dam = Network.build_document_adjacency_matrix('mutual_information')
 print('Printing Document Adjacency Matrix')
 print(dam)
+print('Clustering')
+clusterings = Clusterer(dam)
+print(clusterings.get_clustering())
