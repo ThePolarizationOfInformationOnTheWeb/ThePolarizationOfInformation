@@ -10,7 +10,7 @@ def entropy(dist: np.array)->float:
     :return: the entropy of the source
     """
     warnings.filterwarnings("ignore", category=RuntimeWarning)
-    dist_log = np.log(dist)
+    dist_log = np.log2(dist)
     warnings.filterwarnings("default", category=RuntimeWarning)
     dist_log = np.nan_to_num(dist_log)
     return -(dist_log * dist).sum()
@@ -27,7 +27,7 @@ def kl_divergence(dist1: np.array, dist2: np.array)->float:
     :return: The KL divergence of the two distributions
     """
     warnings.filterwarnings("ignore", category=RuntimeWarning)
-    vector = dist1 * np.log(dist2 / dist1)
+    vector = dist1 * np.log2(dist2 / dist1)
     warnings.filterwarnings("default", category=RuntimeWarning)
     vector = np.nan_to_num(vector)
     return - vector.sum()

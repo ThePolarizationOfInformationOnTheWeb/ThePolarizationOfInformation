@@ -47,7 +47,7 @@ class WordFilter:
                 print('CMI SERIES')
                 print(cmi_series)
                 self.keep_words = self.channel_df.columns[cmi_series[
-                    (cmi_series >= (np.log(threshold * len(self.topic_document_map))))].index.values]
+                    (cmi_series >= (np.log2(threshold * len(self.topic_document_map))))].index.values]
             else:
                 print('WordFilter.WordFilter.get_keep_words: method: {} is not implemented.'.format(method))
                 return self.keep_words
