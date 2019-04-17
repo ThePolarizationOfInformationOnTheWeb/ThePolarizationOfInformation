@@ -5,9 +5,10 @@ from EESpring19.Clusterer import Clusterer
 
 topics = ['test']
 print('Creating Network Object')
-Network = NewsNetwork(topics, "../../EESpring19/keys/SQL_Login.yml")
+Network = NewsNetwork(topics, "../../EESpring19/keys/SQL_Login.yml",'mutual_information')
+# Network = NewsNetwork(topics, "../../EESpring19/keys/SQL_Login.yml",'word_union')
 print('Building Document Adjacency Matrix')
-dam = Network.build_document_adjacency_matrix('mutual_information')
+dam = Network.build_document_adjacency_matrix()
 print('Printing Document Adjacency Matrix')
 print(dam)
 print('Clustering')

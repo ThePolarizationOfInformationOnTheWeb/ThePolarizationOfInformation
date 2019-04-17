@@ -21,23 +21,49 @@ class WordFilter:
         print("WordFilter.__init__: formatted document text")
 
         self.keep_words = None
+        self.keep_topics = None
         self.topic_document_map = {'t_{}'.format(i): ['a_{}'.format(i)] for i in range(self.documents.shape[0])}
 
         # Blahut Arimoto attributes
         self.channel_df = pd.DataFrame()  # Conditional probability of word given document
         self.word_frequency_df = pd.DataFrame()  # Conditional probability of word given document
-        self.phi = None  # Conditional probability of document given word
-        self.p = None  # Probability of document
-        self.q = None  # Probability of word
+        self.phi = np.array([])  # Conditional probability of document given word
+        self.p = np.array([]) # Probability of document
+        self.q = np.array([])  # Probability of word
 
     def get_word_distribution(self):
+        if self.q.shape[0] != 0:
+            self._build_document_word_communication_system()
         return copy.copy(self.q)
 
     def get_topic_distribution(self):
+        if self.p.shape[0] != 0:
+            self._build_document_word_communication_system()
         return copy.copy(self.p)
 
     def get_channel_dataframe(self):
+        if self.channel_df.empty:
+            self._build_document_word_communication_system()
         return copy.deepcopy(self.channel_df)
+
+    def get_keep_topics(self, method: str='Blahut Arimito', threshold: float=0.25):
+        if not self.keep_topics:
+            if method == 'Blahut Arimito':
+                self._build_document_word_communication_system()
+                doc_entropy = entropy(self.p)
+                phi_entropy = np.apply_along_axis(entropy, 1, self.phi)
+                conditional_mutual_information = doc_entropy - phi_entropy
+                cmi_series = pd.Series(conditional_mutual_information)
+                self.keep_words = self.channel_df.columns[cmi_series[
+                    (cmi_series >= (np.log2(threshold * len(self.topic_document_map))))].index.values].values
+                keep_word_freq_df = self.word_frequency_df[self.keep_words]
+                self.keep_topics = self.channel_df[keep_word_freq_df.sum(axis=1) > 0].index.values
+            else:
+                print('WordFilter.WordFilter.get_keep_topics: method: {} is not implemented.'.format(method))
+                return self.keep_topics
+
+        return self.keep_topics
+
 
     def get_keep_words(self, method: str='Blahut Arimito', threshold: float=0.25)->np.array:
         """
@@ -55,7 +81,7 @@ class WordFilter:
                 conditional_mutual_information = doc_entropy - phi_entropy
                 cmi_series = pd.Series(conditional_mutual_information)
                 self.keep_words = self.channel_df.columns[cmi_series[
-                    (cmi_series >= (np.log2(threshold * len(self.topic_document_map))))].index.values]
+                    (cmi_series >= (np.log2(threshold * len(self.topic_document_map))))].index.values].values
             else:
                 print('WordFilter.WordFilter.get_keep_words: method: {} is not implemented.'.format(method))
                 return self.keep_words
@@ -87,7 +113,7 @@ class WordFilter:
             self._build_channel()
 
         # build channel and calculate p and q using Blahut Arimoto
-        if(self.phi, self.q, self.p) == (None, None, None):
+        if np.any(np.array([self.p.shape[0]==0, self.q.shape[0]==0, self.phi.shape[0]==0])):
             self._blahut_arimoto()
 
         # Calculate phi using bayes rule

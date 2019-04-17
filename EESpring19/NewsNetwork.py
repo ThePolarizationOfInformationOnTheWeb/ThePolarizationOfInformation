@@ -7,32 +7,35 @@ from EESpring19.Information import mutual_information
 
 class NewsNetwork:
 
-    def __init__(self, topics: list, path='./EESpring19/keys/SQL_Login.yml'):
+    def __init__(self, topics: list, path='./EESpring19/keys/SQL_Login.yml', similarity_metric='mutual_information'):
         assert(type(topics) is list)
         self.topics = topics
         self.conn = MySQLConn(path)
         self.adj = None
         self.articles = self.conn.retrieve_article_text(self.topics)
         self.WordFilter = WordFilter(pd.Series(self.articles))
+        self.similairty_metric = similarity_metric
 
     def build_news_network(self) -> pd.DataFrame:
         pass
 
-    def build_document_adjacency_matrix(self, method='word_union') -> pd.DataFrame:
-        if method is 'word_union':
+    def build_document_adjacency_matrix(self) -> pd.DataFrame:
+
+        if self.similairty_metric is 'word_union':
             informative_words = self.WordFilter.get_keep_words()  # add threshold
+            informative_topics = self.WordFilter.get_keep_topics()
             if(informative_words.shape[0] != 0):
-                word_frequency_df = self.WordFilter.get_document_word_frequency_df().loc[:, informative_words]
+                word_frequency_df = self.WordFilter.get_document_word_frequency_df().loc[informative_topics, informative_words]
                 #TODO: Account for when a single article has no informative words
                 return self._jaccard_similarity(word_frequency_df)
             else:
                 print('NOTE: No Informative Words Found')
                 return np.eye(len(self.articles))
         else:
-            if method is 'mutual_information':
+            if self.similairty_metric is 'mutual_information':
                 return self._information_similarity()
             else:
-                print('NewsNetwork:build_document_adjacency_matrix: method {} not defined'.format(method))
+                print('NewsNetwork:build_document_adjacency_matrix: method {} not defined'.format(self.similairty_metric))
                 return None
 
     def _jaccard_similarity(self, word_frequency_df) -> pd.DataFrame:
@@ -49,15 +52,17 @@ class NewsNetwork:
     def _information_similarity(self):
         channel = self.WordFilter.get_channel_dataframe()
         p = self.WordFilter.get_topic_distribution()
+        q = self.WordFilter.get_word_distribution()
         adj = pd.DataFrame(data=0,columns=channel.index, index=channel.index)
         for row_index in range(adj.index.shape[0]):
             for col_index in range(adj.index.shape[0]):
                 t = p[row_index] + p[col_index]
                 p_prime = [p[row_index]/t, p[col_index]/t]
-                mi = mutual_information()#TODO Fix this line
+                joint = [channel.get_values()[row_index]*p_prime[0],
+                         channel.get_values()[col_index]*p_prime[1]]
+                mi = mutual_information(joint, p_prime, q)
                 adj.iloc[row_index, col_index] = mi
                 adj.iloc[col_index, row_index] = mi
-
         return adj
 
     def _min_addition(self, dist1: np.array, dist2: np.array):
