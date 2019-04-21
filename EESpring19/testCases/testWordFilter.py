@@ -24,6 +24,7 @@ class MyTest(unittest.TestCase):
     def setUp(self):
         # default word filter
         self.default_doc_series = gen_document_content_series()
+        print(self.default_doc_series)
         self.word_filter = WordFilter(self.default_doc_series)
 
     def test_get_keep_words(self):
