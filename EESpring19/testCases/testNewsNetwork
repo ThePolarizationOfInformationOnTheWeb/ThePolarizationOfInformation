@@ -3,7 +3,7 @@ import pandas as pd
 from EESpring19.NewsNetwork import NewsNetwork
 from EESpring19.Clusterer import Clusterer
 
-topics = ['test']
+topics = ['Government Shutdown']
 print('Creating Network Object')
 Network = NewsNetwork(topics, "../../EESpring19/keys/SQL_Login.yml",'mutual_information')#mutual_information, word_union
 # Network = NewsNetwork(topics, "../../EESpring19/keys/SQL_Login.yml",'word_union')

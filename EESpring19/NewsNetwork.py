@@ -26,7 +26,6 @@ class NewsNetwork:
             informative_topics = self.WordFilter.get_keep_topics()
             if(informative_words.shape[0] != 0):
                 word_frequency_df = self.WordFilter.get_document_word_frequency_df().loc[informative_topics, informative_words]
-                #TODO: Account for when a single article has no informative words
                 return self._jaccard_similarity(word_frequency_df)
             else:
                 print('NOTE: No Informative Words Found')
@@ -53,16 +52,23 @@ class NewsNetwork:
         channel = self.WordFilter.get_channel_dataframe()
         p = self.WordFilter.get_topic_distribution()
         q = self.WordFilter.get_word_distribution()
-        adj = pd.DataFrame(data=0,columns=channel.index, index=channel.index)
-        for row_index in range(adj.index.shape[0]):
-            for col_index in range(adj.index.shape[0]):
+
+        # subset on informative words
+        informative_words = self.WordFilter.get_keep_words()  # add threshold
+        informative_topics = self.WordFilter.get_keep_topics()
+        q_prime = q[informative_words] / q[informative_words].sum()
+        channel_prime = channel.loc[informative_topics, informative_words]
+
+        adj = pd.DataFrame(data=0, columns=informative_topics, index=informative_topics)
+        for row_index in informative_topics:
+            for col_index in informative_topics:
                 t = p[row_index] + p[col_index]
                 p_prime = [p[row_index]/t, p[col_index]/t]
-                joint = [channel.get_values()[row_index]*p_prime[0],
-                         channel.get_values()[col_index]*p_prime[1]]
-                mi = mutual_information(joint, p_prime, q)
-                adj.iloc[row_index, col_index] = mi
-                adj.iloc[col_index, row_index] = mi
+                joint = [channel_prime.loc[row_index, :].values * p_prime[0],
+                         channel_prime.loc[col_index, :].values * p_prime[1]]
+                mi = mutual_information(joint, p_prime, q_prime)
+                adj.loc[row_index, col_index] = mi
+                adj.loc[col_index, row_index] = mi
         return adj
 
     def _min_addition(self, dist1: np.array, dist2: np.array):

@@ -28,25 +28,27 @@ class WordFilter:
         self.channel_df = pd.DataFrame()  # Conditional probability of word given document
         self.word_frequency_df = pd.DataFrame()  # Conditional probability of word given document
         self.phi = np.array([])  # Conditional probability of document given word
-        self.p = np.array([]) # Probability of document
+        self.p = np.array([])  # Probability of document
         self.q = np.array([])  # Probability of word
 
-    def get_word_distribution(self):
+    def get_word_distribution(self) -> pd.Series:
         if self.q.shape[0] != 0:
             self._build_document_word_communication_system()
-        return copy.copy(self.q)
+        data = copy.copy(self.q)
+        return pd.Series(data=data, index=self.channel_df.columns)
 
-    def get_topic_distribution(self):
+    def get_topic_distribution(self) -> pd.Series:
         if self.p.shape[0] != 0:
             self._build_document_word_communication_system()
-        return copy.copy(self.p)
+        data = copy.copy(self.p)
+        return pd.Series(data=data, index=self.channel_df.index)
 
     def get_channel_dataframe(self):
         if self.channel_df.empty:
             self._build_document_word_communication_system()
         return copy.deepcopy(self.channel_df)
 
-    def get_keep_topics(self, method: str='Blahut Arimito', threshold: float=0.25):
+    def get_keep_topics(self, method: str='Blahut Arimito', threshold: float=0.25)->np.array:
         if not self.keep_topics:
             if method == 'Blahut Arimito':
                 self._build_document_word_communication_system()
@@ -113,7 +115,7 @@ class WordFilter:
             self._build_channel()
 
         # build channel and calculate p and q using Blahut Arimoto
-        if np.any(np.array([self.p.shape[0]==0, self.q.shape[0]==0, self.phi.shape[0]==0])):
+        if np.any(np.array([self.p.shape[0] == 0, self.q.shape[0] == 0, self.phi.shape[0] == 0])):
             self._blahut_arimoto()
 
         # Calculate phi using bayes rule
@@ -179,7 +181,7 @@ class WordFilter:
         self.topic_document_map = new_topic_document_map
         self.word_frequency_df = new_word_frequency_df
         self.channel_df = new_word_frequency_df.apply(normalize, axis='columns')
-        (self.phi, self.q, self.p) = (None, None, None)
+        (self.phi, self.q, self.p) = (np.array([]), np.array([]), np.array([]))
         self._build_document_word_communication_system()
 
     def _build_channel(self)->None:
@@ -208,6 +210,8 @@ class WordFilter:
         channel_df = pd.DataFrame(data=0, index=self.documents.index, columns=unique_words)
         word_frequency_df = channel_df.apply(unique_frequency, axis='rows')
         channel_df = word_frequency_df.apply(normalize, axis='columns')
+
+        print("_build_channel: found words frequencies")
 
         self.word_frequency_df = word_frequency_df
         self.channel_df = channel_df
