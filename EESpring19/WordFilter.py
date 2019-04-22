@@ -94,10 +94,10 @@ class WordFilter:
             conditional_mutual_information = doc_entropy - phi_entropy
             cmi_series = pd.Series(conditional_mutual_information)
             condition = cmi_series >= (np.log2(threshold * len(self.topic_document_map)))
+            print(cmi_series)
 
             # words used in analysis must be present in at least log_10(number of documents)
-            # condition = condition & ((self.word_frequency_df >= 1).sum() > np.log10(self.channel_df.shape[0]))
-            condition = ((self.word_frequency_df >= 1).sum() > np.log10(self.channel_df.shape[0]))
+            condition = condition & ((self.word_frequency_df > 1).sum() > np.log10(self.channel_df.shape[0])).values
 
             self.keep_words = self.channel_df.columns[cmi_series[condition].index.values].values
             print(self.keep_words)
