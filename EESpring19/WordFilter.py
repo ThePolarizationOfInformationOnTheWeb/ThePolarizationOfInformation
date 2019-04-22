@@ -20,8 +20,8 @@ class WordFilter:
         self.documents = self.documents.str.replace("[^\w\s]", " ")
         print("WordFilter.__init__: formatted document text")
 
-        self.keep_words = None
-        self.keep_topics = None
+        self.keep_words = np.array([])
+        self.keep_topics = np.array([])
         self.topic_document_map = {'t_{}'.format(i): ['a_{}'.format(i)] for i in range(self.documents.shape[0])}
 
         # Blahut Arimoto attributes
@@ -49,23 +49,15 @@ class WordFilter:
         return copy.deepcopy(self.channel_df)
 
     def get_keep_topics(self, method: str='Blahut Arimito', threshold: float=0.25)->np.array:
-        if not self.keep_topics:
+        if (self.keep_topics.size == 0) or (self.keep_words.size == 0):
             if method == 'Blahut Arimito':
-                self._build_document_word_communication_system()
-                doc_entropy = entropy(self.p)
-                phi_entropy = np.apply_along_axis(entropy, 1, self.phi)
-                conditional_mutual_information = doc_entropy - phi_entropy
-                cmi_series = pd.Series(conditional_mutual_information)
-                self.keep_words = self.channel_df.columns[cmi_series[
-                    (cmi_series >= (np.log2(threshold * len(self.topic_document_map))))].index.values].values
-                keep_word_freq_df = self.word_frequency_df[self.keep_words]
-                self.keep_topics = self.channel_df[keep_word_freq_df.sum(axis=1) > 0].index.values
+                self._calc_keep_topics_and_words(method=method, threshold=threshold)
+
             else:
                 print('WordFilter.WordFilter.get_keep_topics: method: {} is not implemented.'.format(method))
                 return self.keep_topics
 
         return self.keep_topics
-
 
     def get_keep_words(self, method: str='Blahut Arimito', threshold: float=0.25)->np.array:
         """
@@ -75,15 +67,9 @@ class WordFilter:
         :return: np.array of informative words
         """
 
-        if not self.keep_words:
+        if (self.keep_topics.size == 0) or (self.keep_words.size == 0):
             if method == 'Blahut Arimito':
-                self._build_document_word_communication_system()
-                doc_entropy = entropy(self.p)
-                phi_entropy = np.apply_along_axis(entropy, 1, self.phi)
-                conditional_mutual_information = doc_entropy - phi_entropy
-                cmi_series = pd.Series(conditional_mutual_information)
-                self.keep_words = self.channel_df.columns[cmi_series[
-                    (cmi_series >= (np.log2(threshold * len(self.topic_document_map))))].index.values].values
+                self._calc_keep_topics_and_words(method=method, threshold=threshold)
             else:
                 print('WordFilter.WordFilter.get_keep_words: method: {} is not implemented.'.format(method))
                 return self.keep_words
@@ -97,6 +83,27 @@ class WordFilter:
         if self.word_frequency_df.empty:
             self._build_channel()
         return self.word_frequency_df
+
+    def _calc_keep_topics_and_words(self, method: str='Blahut Arimito', threshold: float=0.1):
+        if method == 'Blahut Arimito':
+            self._build_document_word_communication_system()
+
+            # conditional mutual information is used to filter uninformative words
+            doc_entropy = entropy(self.p)
+            phi_entropy = np.apply_along_axis(entropy, 1, self.phi)
+            conditional_mutual_information = doc_entropy - phi_entropy
+            cmi_series = pd.Series(conditional_mutual_information)
+            condition = cmi_series >= (np.log2(threshold * len(self.topic_document_map)))
+
+            # words used in analysis must be present in at least log_10(number of documents)
+            # condition = condition & ((self.word_frequency_df >= 1).sum() > np.log10(self.channel_df.shape[0]))
+            condition = ((self.word_frequency_df >= 1).sum() > np.log10(self.channel_df.shape[0]))
+
+            self.keep_words = self.channel_df.columns[cmi_series[condition].index.values].values
+            print(self.keep_words)
+            keep_word_freq_df = self.word_frequency_df[self.keep_words]
+            self.keep_topics = self.channel_df[keep_word_freq_df.sum(axis=1) > 0].index.values
+            print(self.keep_topics)
 
     def _build_document_word_communication_system(self):
         """
