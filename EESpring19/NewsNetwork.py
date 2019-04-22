@@ -14,14 +14,14 @@ class NewsNetwork:
         self.adj = None
         self.articles = self.conn.retrieve_article_text(self.topics)
         self.WordFilter = WordFilter(pd.Series(self.articles))
-        self.similairty_metric = similarity_metric
+        self.similarity_metric = similarity_metric
 
     def build_news_network(self) -> pd.DataFrame:
         pass
 
     def build_document_adjacency_matrix(self) -> pd.DataFrame:
 
-        if self.similairty_metric is 'word_union':
+        if self.similarity_metric is 'word_union':
             informative_words = self.WordFilter.get_keep_words()  # add threshold
             informative_topics = self.WordFilter.get_keep_topics()
             if(informative_words.shape[0] != 0):
@@ -30,12 +30,11 @@ class NewsNetwork:
             else:
                 print('NOTE: No Informative Words Found')
                 return np.eye(len(self.articles))
+        elif self.similarity_metric is 'mutual_information':
+            return self._information_similarity()
         else:
-            if self.similairty_metric is 'mutual_information':
-                return self._information_similarity()
-            else:
-                print('NewsNetwork:build_document_adjacency_matrix: method {} not defined'.format(self.similairty_metric))
-                return None
+            print('NewsNetwork:build_document_adjacency_matrix: method {} not defined'.format(self.similarity_metric))
+            return None
 
     def _jaccard_similarity(self, word_frequency_df) -> pd.DataFrame:
         """

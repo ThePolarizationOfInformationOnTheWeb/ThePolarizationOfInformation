@@ -40,9 +40,9 @@ def couple(TranList, TranCumul):
     TranProb = [[round(i, 15) for i in j] for j in TranProb]
 
     # D = sum_{x} max2_{s} p(s->x)
-    # mx2 is the list of the 2nd largest inward edge transition probabilities
+    # max2 is the list of the 2nd largest inward edge transition probabilities
     # for all the nodes, i.e. if Ej is the set of edges with terminating vertex
-    # j, then Tj is the list of transition probabilities corresponding to the
+    # j, and Tj is the list of transition probabilities corresponding to the
     # edges in Ej, then mx2[j] is the 2nd largest element of Tj.
     mx2 = [max2([TranProb[i][TranList[i].index(j)] for i in range(n) if j in TranList[i]]) for j in range(n)]
 
@@ -58,7 +58,7 @@ def couple(TranList, TranCumul):
     # i.e. 1 list for each node.
     l = [[] for _ in TranList]  # the states associated with transition
     q = [[] for _ in TranProb]  # the transition probabilities, if l[i][j] is -1
-    # then this holds the remaing probability mass
+    # then this holds the remaining probability mass
     # from ref[j]
     r = [[] for _ in TranList]  # the remaining probability mass from original
     # transition probabilities
@@ -79,9 +79,7 @@ def couple(TranList, TranCumul):
                     q[i].append(ref[j])  # assign probability, the value in ref[j]
                     l[i].append(j)  # state associated with probability, i.e. node
                     r[i].append(TranProb[i][k] - ref[j])  # keep track of remaining
-                    # probability. we find the
-                    # difference between the
-                    # original transition
+                    # probability. we find the difference between the original transition
                     # probability and ref[j]
                 else:  # more allocated space than probability. i.e. the transition
                     # probability from node i to j is less than or equal to the
@@ -94,7 +92,7 @@ def couple(TranList, TranCumul):
                     q[i].append(ref[j] - TranProb[i][k])  # empty space not assigned,
                     # difference between ref[j]
                     # and the original
-                    # transition probbability,
+                    # transition probability,
                     r[i].append(0)  # no left over probability mass from the
                     # original transition probability
             else:  # not neighbors, i.e. original transition probability is 0
@@ -107,8 +105,7 @@ def couple(TranList, TranCumul):
     # iterate backwards when filling in probabilities to avoid index problems
     for i in range(n):
         for j in range(len(l[i]) - 1, -1, -1):  # look for empty spaces, iterate
-            # through a list of indices for l[i]
-            # in reverse order
+            # through a list of indices for l[i] in reverse order
             if l[i][j] == -1:  # there is left over probability mass from ref[j]
                 # that may be assigned
                 for k in range(len(r) - 1, -1, -1):  # iterate over all indices of
@@ -121,7 +118,7 @@ def couple(TranList, TranCumul):
                             # probability mass left from ref[j] than there is
                             # left over original transition probability mass that
                             # has not been assigned yet
-                            q[i].insert(j + 1, r[i][k])  # add transistion probability
+                            q[i].insert(j + 1, r[i][k])  # add transition probability
                             q[i][j] -= r[i][k]  # update left over space from ref[j]
                             l[i].insert(j + 1, k)  # add corresponging state (node)
                             # for transition

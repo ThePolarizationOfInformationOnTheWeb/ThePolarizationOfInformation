@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import igraph
 from EESpring19.BackwardPath import back_path_clustering, transval
 
 
@@ -38,10 +39,17 @@ class Clusterer:
                        for i in range(len(self.adj))]
                 self.clusterings, self.back_path_critical_times = back_path_clustering(adj, TranList, TranCumul)
 
-        if selectionMethod is 'first':
+            if clusterMethod is 'label_propagation':
+                g = igraph.Graph.Weighted_Adjacency(self.adj.tolist(), mode='UNDIRECTED')
+                self.clusterings = np.array([np.array(c) for c in g.community_label_propagation(weights='weight')])
+
+        if (clusterMethod is 'backward_path') and (selectionMethod is 'first'):
             return self.clusterings[0]
 
-        if selectionMethod is 'all':
+        if (clusterMethod is 'backward_path') and (selectionMethod is 'all'):
+            return self.clusterings
+
+        elif clusterMethod is 'label_propagation':
             return self.clusterings
 
 
