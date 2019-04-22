@@ -2,8 +2,8 @@ import numpy as np
 from EESpring19.Information import *
 #passed tests, log changed to base 2
 print('Creating Test Distributions')
-dist1 = np.array([0.25,0.25,.375,0.125])
-dist2 = np.array([0.25,0.25,0.25,0.25])
+dist1 = np.array([0.36,0.48,0.16])
+dist2 = np.array([0.333,0.333,0.333])
 print(dist1)
 print(dist2)
 print('Calculating Entropy of dist1')
