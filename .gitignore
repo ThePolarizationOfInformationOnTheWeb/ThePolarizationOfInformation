@@ -7,6 +7,7 @@ consumer_key.txt
 consumer_secret.txt
 venv
 *scrapy.exe
+*igraph
 496/newscrawler/newscrawler/SQL_Login.yml
 __pycache__
 *.pyc
