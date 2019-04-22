@@ -87,7 +87,6 @@ class WordFilter:
             else:
                 print('WordFilter.WordFilter.get_keep_words: method: {} is not implemented.'.format(method))
                 return self.keep_words
-
         return self.keep_words
 
     def get_document_word_frequency_df(self):
