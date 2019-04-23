@@ -55,8 +55,11 @@ class NewsNetwork:
         # subset on informative words
         informative_words = self.WordFilter.get_keep_words()  # add threshold
         informative_topics = self.WordFilter.get_keep_topics()
+        print(informative_words.shape)
+        print(informative_topics.shape)
         q_prime = q[informative_words] / q[informative_words].sum()
         channel_prime = channel.loc[informative_topics, informative_words]
+        channel_prime = channel_prime.divide(channel_prime.sum(axis=1), axis=0)  # re-normalize conditional pmfs
 
         adj = pd.DataFrame(data=0, columns=informative_topics, index=informative_topics)
         for row_index in informative_topics:
