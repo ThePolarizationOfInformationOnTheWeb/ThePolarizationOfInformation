@@ -33,7 +33,7 @@ def kl_divergence(dist1: np.array, dist2: np.array)->float:
     return - vector.sum()
 
 
-def mutual_information(joint: np.array, dist1: np.array, dist2: np.array)->float:
+def mutual_information(joint: np.array)->float:
     """
 
     :param joint:
@@ -41,6 +41,8 @@ def mutual_information(joint: np.array, dist1: np.array, dist2: np.array)->float
     :param dist2:
     :return:
     """
-    product = np.outer(dist1, dist2)
+    dist1 = np.sum(joint, axis=0)
+    dist2 = np.sum(joint, axis=1)
+    product = np.outer(dist2, dist1)
     mutual_inf = kl_divergence(joint, product)
     return mutual_inf

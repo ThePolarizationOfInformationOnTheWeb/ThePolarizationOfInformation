@@ -15,7 +15,6 @@ class NewsNetwork:
         self.articles = self.conn.retrieve_article_text(self.topics)
         self.WordFilter = WordFilter(pd.Series(self.articles))
         self.similarity_metric = similarity_metric
-
     def build_news_network(self) -> pd.DataFrame:
         pass
 
@@ -68,9 +67,9 @@ class NewsNetwork:
                 p_prime = [p[row_index]/t, p[col_index]/t]
                 joint = [channel_prime.loc[row_index, :].values * p_prime[0],
                          channel_prime.loc[col_index, :].values * p_prime[1]]
-                mi = mutual_information(joint, p_prime, q_prime)
-                adj.loc[row_index, col_index] = mi
-                adj.loc[col_index, row_index] = mi
+                mi = mutual_information(joint)
+                adj.loc[row_index, col_index] = 1-mi
+                adj.loc[col_index, row_index] = 1-mi
         return adj
 
     def _min_addition(self, dist1: np.array, dist2: np.array):
