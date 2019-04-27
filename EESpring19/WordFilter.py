@@ -98,7 +98,6 @@ class WordFilter:
 
             # words used in analysis must be present in at least log_10(number of documents)
             condition = condition & ((self.word_frequency_df > 1).sum() > np.log10(self.channel_df.shape[0])).values
-
             self.keep_words = self.channel_df.columns[cmi_series[condition].index.values].values
             print(self.keep_words)
             keep_word_freq_df = self.word_frequency_df[self.keep_words]
