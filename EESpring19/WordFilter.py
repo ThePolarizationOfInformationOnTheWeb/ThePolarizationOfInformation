@@ -84,7 +84,7 @@ class WordFilter:
             self._build_channel()
         return self.word_frequency_df
 
-    def _calc_keep_topics_and_words(self, method: str='Blahut Arimito', threshold: float=0.1):
+    def _calc_keep_topics_and_words(self, method: str='Blahut Arimito', threshold: float=0.05):
         if method == 'Blahut Arimito':
             self._build_document_word_communication_system()
 

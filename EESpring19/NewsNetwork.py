@@ -57,7 +57,7 @@ class NewsNetwork:
         informative_topics = self.WordFilter.get_keep_topics()
         print(informative_words.shape)
         print(informative_topics.shape)
-        q_prime = q[informative_words] / q[informative_words].sum()
+        q_prime = q[informative_words] / q[informative_words].sum() #
         channel_prime = channel.loc[informative_topics, informative_words]
         channel_prime = channel_prime.divide(channel_prime.sum(axis=1), axis=0)  # re-normalize conditional pmfs
 
@@ -68,6 +68,8 @@ class NewsNetwork:
                 p_prime = [p[row_index]/t, p[col_index]/t]
                 joint = [channel_prime.loc[row_index, :].values * p_prime[0],
                          channel_prime.loc[col_index, :].values * p_prime[1]]
+                # print('joint sum {}'.format(sum([j.sum() for j in joint])))
+                print(q_prime)
                 mi = mutual_information(joint, p_prime, q_prime)
                 adj.loc[row_index, col_index] = mi
                 adj.loc[col_index, row_index] = mi
