@@ -49,14 +49,12 @@ class NewsNetwork:
     def _information_similarity(self):
         channel = self.WordFilter.get_channel_dataframe()
         p = self.WordFilter.get_topic_distribution()
-        q = self.WordFilter.get_word_distribution()
 
         # subset on informative words
         informative_words = self.WordFilter.get_keep_words()  # add threshold
         informative_topics = self.WordFilter.get_keep_topics()
         print(informative_words.shape)
         print(informative_topics.shape)
-        q_prime = q[informative_words] / q[informative_words].sum() #
         channel_prime = channel.loc[informative_topics, informative_words]
         channel_prime = channel_prime.divide(channel_prime.sum(axis=1), axis=0)  # re-normalize conditional pmfs
 
