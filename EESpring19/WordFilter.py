@@ -59,7 +59,7 @@ class WordFilter:
 
         return self.keep_topics
 
-    def get_keep_words(self, method: str='Blahut Arimito', threshold: float=0.25)->np.array:
+    def get_keep_words(self, method: str='Blahut Arimito', threshold: float=0.4)->np.array:
         """
         Returns the array of words to keep
         :param method: method to use for the word filter. Defaults to Blahut Arimito.

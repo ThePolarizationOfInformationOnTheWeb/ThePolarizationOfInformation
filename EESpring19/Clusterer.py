@@ -12,6 +12,7 @@ class Clusterer:
         :param network_df: The DataFrame that holds the adjacency matrix
         """
         self.adj = network_df.values
+        # key: adj index value: network_df id
         self.node_id_map = pd.Series(dict(zip(list(range(network_df.shape[0])), network_df.index.tolist())))
         self.clusterings = None
         self.back_path_critical_times = None
@@ -44,12 +45,12 @@ class Clusterer:
                 self.clusterings = np.array([np.array(c) for c in g.community_label_propagation(weights='weight')])
 
         if (clusterMethod is 'backward_path') and (selectionMethod is 'first'):
-            return self.clusterings[0]
+            return [self.node_id_map[cluster].values for cluster in self.clusterings[0]]
 
         if (clusterMethod is 'backward_path') and (selectionMethod is 'all'):
-            return self.clusterings
+            return [self.node_id_map[cluster].values for cluster in self.clusterings]
 
         elif clusterMethod is 'label_propagation':
-            return self.clusterings
+            return [self.node_id_map[cluster].values for cluster in self.clusterings]
 
 
