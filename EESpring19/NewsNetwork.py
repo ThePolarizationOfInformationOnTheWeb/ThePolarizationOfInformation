@@ -4,6 +4,7 @@ import pandas as pd
 from EESpring19.MySQLConn import MySQLConn
 from EESpring19.WordFilter import WordFilter
 from EESpring19.Information import mutual_information
+from EESpring19.Clusterer import Clusterer
 
 class NewsNetwork:
 
@@ -12,14 +13,34 @@ class NewsNetwork:
         self.topics = topics
         self.conn = MySQLConn(path)
         self.adj = None
+        self.Clusterer = None
         self.articles = self.conn.retrieve_article_text(self.topics)
         self.WordFilter = WordFilter(pd.Series(self.articles))
         self.similarity_metric = similarity_metric
+
     def build_news_network(self) -> pd.DataFrame:
-        pass
+        curr_clustering = [[key] for key in self.articles]
+        clusterings = [curr_clustering]
+        Topic_article_map = {T: [T] for T in self.articles}
+        for i in range(100):
+            dam = self.build_document_adjacency_matrix()
+            self.Clusterer = Clusterer(dam)
+            clustering = self.Clusterer.get_clustering('backward_path')
+
+            if len(clustering) == len(curr_clustering):
+                # no new clusters, equilibrium
+                break
+
+            # join articles into topics
+            self.WordFilter.combine_documents(clustering)
+            Topic_article_map = {T_1: [Topic_article_map[T_0] for
+                                       T_0 in clustering[T_1]] for T_1 in range(len(clustering))}
+            Topic_article_map = {idx: [i for l in Topic_article_map[0] for i in l] for idx in Topic_article_map}
+            clusterings.append(Topic_article_map.values())
+
+        return clusterings
 
     def build_document_adjacency_matrix(self) -> pd.DataFrame:
-
         if self.similarity_metric is 'word_union':
             informative_words = self.WordFilter.get_keep_words()  # add threshold
             informative_topics = self.WordFilter.get_keep_topics()
