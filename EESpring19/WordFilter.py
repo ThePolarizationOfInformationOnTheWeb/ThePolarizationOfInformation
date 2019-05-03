@@ -48,7 +48,7 @@ class WordFilter:
             self._build_document_word_communication_system()
         return copy.deepcopy(self.channel_df)
 
-    def get_keep_topics(self, method: str='Blahut Arimito', threshold: float=0.4)->np.array:
+    def get_keep_topics(self, method: str='Blahut Arimito', threshold: float=0.26)->np.array:
         if (self.keep_topics.size == 0) or (self.keep_words.size == 0):
             if method == 'Blahut Arimito':
                 self._calc_keep_topics_and_words(method=method, threshold=threshold)
@@ -59,7 +59,7 @@ class WordFilter:
 
         return self.keep_topics
 
-    def get_keep_words(self, method: str='Blahut Arimito', threshold: float=0.4)->np.array:
+    def get_keep_words(self, method: str='Blahut Arimito', threshold: float=0.26)->np.array:
         """
         Returns the array of words to keep
         :param method: method to use for the word filter. Defaults to Blahut Arimito.

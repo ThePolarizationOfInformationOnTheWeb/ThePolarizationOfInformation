@@ -3,7 +3,7 @@ import pandas as pd
 from EESpring19.NewsNetwork import NewsNetwork
 from EESpring19.Clusterer import Clusterer
 
-topics = ['Government Shutdown']
+topics = ['Computers','History']
 print('Creating Network Object')
 Network = NewsNetwork(topics, "../../EESpring19/keys/SQL_Login.yml",'mutual_information')#mutual_information, word_union
 # Network = NewsNetwork(topics, "../../EESpring19/keys/SQL_Login.yml",'word_union')
@@ -12,5 +12,5 @@ dam = Network.build_document_adjacency_matrix()
 print('Printing Document Adjacency Matrix')
 print(dam)
 print('Clustering')
-clusterings = Clusterer(dam)
+clusterings = Clusterer(dam**3)
 print(clusterings.get_clustering('backward_path'))#backward_path, label_propagation
