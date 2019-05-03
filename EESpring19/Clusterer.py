@@ -45,6 +45,7 @@ class Clusterer:
                 self.clusterings = np.array([np.array(c) for c in g.community_label_propagation(weights='weight')])
 
         if (clusterMethod is 'backward_path') and (selectionMethod is 'first'):
+            print(self.clusterings)
             return [list(self.node_id_map[cluster].values) for cluster in self.clusterings[0]]
 
         if (clusterMethod is 'backward_path') and (selectionMethod is 'all'):
