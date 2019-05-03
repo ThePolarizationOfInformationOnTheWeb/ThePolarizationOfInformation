@@ -21,24 +21,54 @@ class NewsNetwork:
     def build_news_network(self) -> pd.DataFrame:
         curr_clustering = [[key] for key in self.articles]
         clusterings = [curr_clustering]
+        dams = []
         Topic_article_map = {T: [T] for T in self.articles}
         for i in range(100):
             dam = self.build_document_adjacency_matrix()
+            dams.append(dam)
             self.Clusterer = Clusterer(dam)
-            clustering = self.Clusterer.get_clustering('backward_path')
+            curr_clustering = self.Clusterer.get_clustering('backward_path')
 
-            if len(clustering) == len(curr_clustering):
-                # no new clusters, equilibrium
+            if (len(clusterings[-1]) == len(curr_clustering)) or (len(curr_clustering) == 1):
+                # no new clusters, or single cluster => equilibrium
+                print("Topic_article_map")
+                print(Topic_article_map)
+                print("curr_clustering")
+                print(curr_clustering)
+                print("range(len(curr_clustering))")
+                print(range(len(curr_clustering)))
+                print("urr_clustering[T_1]]")
+                print(curr_clustering[0])
+                print('Topic_article_map[T_0]')
+                print(Topic_article_map[curr_clustering[0][0]])
+                Topic_article_map = {T_1: [Topic_article_map[T_0] for
+                                           T_0 in curr_clustering[T_1]] for T_1 in range(len(curr_clustering))}
+                Topic_article_map = {idx: [i for l in Topic_article_map[0] for i in l] for idx in Topic_article_map}
+                self.WordFilter.combine_documents(curr_clustering)
+                clusterings.append(Topic_article_map.values())
+                dams.append(dam)
                 break
 
+            print("Topic_article_map")
+            print(Topic_article_map)
+            print("curr_clustering")
+            print(curr_clustering)
+            print("range(len(curr_clustering))")
+            print(range(len(curr_clustering)))
+            print("urr_clustering[T_1]]")
+            print(curr_clustering[0])
+            print('Topic_article_map[T_0]')
+            print(Topic_article_map[curr_clustering[0][0]])
             # join articles into topics
-            self.WordFilter.combine_documents(clustering)
             Topic_article_map = {T_1: [Topic_article_map[T_0] for
-                                       T_0 in clustering[T_1]] for T_1 in range(len(clustering))}
+                                       T_0 in curr_clustering[T_1]] for
+                                       T_1 in range(len(curr_clustering))}
             Topic_article_map = {idx: [i for l in Topic_article_map[0] for i in l] for idx in Topic_article_map}
+            self.WordFilter.combine_documents(curr_clustering)
             clusterings.append(Topic_article_map.values())
 
-        return clusterings
+
+        return clusterings, dams
 
     def build_document_adjacency_matrix(self) -> pd.DataFrame:
         if self.similarity_metric is 'word_union':
@@ -74,8 +104,8 @@ class NewsNetwork:
         # subset on informative words
         informative_words = self.WordFilter.get_keep_words()  # add threshold
         informative_topics = self.WordFilter.get_keep_topics()
-        print(informative_words.shape)
-        print(informative_topics.shape)
+        #print(informative_words.shape)
+        #print(informative_topics.shape)
         channel_prime = channel.loc[informative_topics, informative_words]
         channel_prime = channel_prime.divide(channel_prime.sum(axis=1), axis=0)  # re-normalize conditional pmfs
 
@@ -87,8 +117,8 @@ class NewsNetwork:
                 joint = [channel_prime.loc[row_index, :].values * p_prime[0],
                          channel_prime.loc[col_index, :].values * p_prime[1]]
                 mi = mutual_information(joint)
-                adj.loc[row_index, col_index] = 1-mi
-                adj.loc[col_index, row_index] = 1-mi
+                adj.loc[row_index, col_index] = (1-mi)**90
+                adj.loc[col_index, row_index] = (1-mi)**90
         return adj
 
     def _min_addition(self, dist1: np.array, dist2: np.array):

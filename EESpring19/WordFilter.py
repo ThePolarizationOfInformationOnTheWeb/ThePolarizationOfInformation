@@ -22,7 +22,7 @@ class WordFilter:
 
         self.keep_words = np.array([])
         self.keep_topics = np.array([])
-        self.topic_document_map = {'t_{}'.format(i): ['a_{}'.format(i)] for i in range(self.documents.shape[0])}
+        self.topic_document_map = {i: ['a_{}'.format(i)] for i in range(self.documents.shape[0])}
 
         # Blahut Arimoto attributes
         self.channel_df = pd.DataFrame()  # Conditional probability of word given document
@@ -94,15 +94,15 @@ class WordFilter:
             conditional_mutual_information = doc_entropy - phi_entropy
             cmi_series = pd.Series(conditional_mutual_information)
             condition = cmi_series >= (np.log2(threshold * len(self.topic_document_map)))
-            print(cmi_series)
+            #print(cmi_series)
 
             # words used in analysis must be present in at least log_10(number of documents)
             condition = condition & ((self.word_frequency_df > 1).sum() > np.log10(self.channel_df.shape[0])).values
             self.keep_words = self.channel_df.columns[cmi_series[condition].index.values].values
-            print(self.keep_words)
+            #print(self.keep_words)
             keep_word_freq_df = self.word_frequency_df[self.keep_words]
             self.keep_topics = self.channel_df[keep_word_freq_df.sum(axis=1) > 0].index.values
-            print(self.keep_topics)
+            #print(self.keep_topics)
 
     def _build_document_word_communication_system(self):
         """
@@ -175,7 +175,7 @@ class WordFilter:
         def normalize(row):
             return row / self.word_frequency_df.loc[row.name, :].sum()
 
-        new_topic_document_map = {'t_{}'.format(i): cluster for i, cluster in enumerate(clustering)}
+        new_topic_document_map = {i: cluster for i, cluster in enumerate(clustering)}
         new_word_frequency_df = pd.DataFrame(columns=self.word_frequency_df.columns)
         for topic in new_topic_document_map:
             temp_series = self.word_frequency_df.loc[new_topic_document_map[topic], :].sum()
@@ -187,6 +187,8 @@ class WordFilter:
         self.word_frequency_df = new_word_frequency_df
         self.channel_df = new_word_frequency_df.apply(normalize, axis='columns')
         (self.phi, self.q, self.p) = (np.array([]), np.array([]), np.array([]))
+        self.keep_words = np.array([])
+        self.keep_topics = np.array([])
         self._build_document_word_communication_system()
 
     def _build_channel(self)->None:
