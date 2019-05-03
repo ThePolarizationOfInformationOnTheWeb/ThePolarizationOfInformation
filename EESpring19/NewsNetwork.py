@@ -45,7 +45,7 @@ class NewsNetwork:
                                            T_0 in curr_clustering[T_1]] for T_1 in range(len(curr_clustering))}
                 Topic_article_map = {idx: [i for l in Topic_article_map[idx] for i in l] for idx in Topic_article_map}
                 self.WordFilter.combine_documents(curr_clustering)
-                clusterings.append(Topic_article_map.values())
+                clusterings.append(list(Topic_article_map.values()))
                 dams.append(dam)
                 break
 
@@ -67,7 +67,7 @@ class NewsNetwork:
             print(Topic_article_map)
             Topic_article_map = {idx: [i for l in Topic_article_map[idx] for i in l] for idx in Topic_article_map}
             self.WordFilter.combine_documents(curr_clustering)
-            clusterings.append(Topic_article_map.values())
+            clusterings.append(list(Topic_article_map.values()))
 
 
         return clusterings, dams
