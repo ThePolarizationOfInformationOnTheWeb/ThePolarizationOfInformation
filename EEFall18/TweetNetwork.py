@@ -2,8 +2,8 @@ import pandas as pd
 import numpy as np
 import math
 import sys
-from Clusterer import Clusterer
-from TweetFeatureExtractor import TweetFeatureExtractor
+from EEFall18.TweetClusterer import TweetClusterer
+from EEFall18.TweetFeatureExtractor import TweetFeatureExtractor
 from scipy import spatial
 
 
@@ -44,7 +44,7 @@ class TweetNetwork:
             self.adj = self._calc_cosine_similarity_matrix(tweet_cluster_vector_df)
 
             # initialize clusterer class with network
-            self.clusterer = Clusterer(self.topic, network_df=self.adj)
+            self.clusterer = TweetClusterer(self.topic, network_df=self.adj)
             self.clusterer.backward_path()
 
             while iteration_count < 100:

@@ -1,5 +1,5 @@
 import networkx as nx
-from Clusterer import Clusterer
+from EEFall18.TweetClusterer import TweetClusterer
 
 
 class PolarityCalculator:
@@ -9,7 +9,7 @@ class PolarityCalculator:
         self.back_path_clusterer = None
 
     def cluster_backward_path(self) -> None:
-        self.back_path_clusterer = Clusterer(self.topic)
+        self.back_path_clusterer = TweetClusterer(self.topic)
         self.back_path_clusterer.backward_path()
 
     def conductance_calc(self, clustering_type: str = 'back_path') -> float:

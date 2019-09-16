@@ -1,10 +1,10 @@
 import pandas as pd
 import numpy as np
-from TweetFeatureExtractor import TweetFeatureExtractor
-from BackwardPath import back_path_clustering, transval
+from EEFall18.TweetFeatureExtractor import TweetFeatureExtractor
+from EEFall18.BackwardPath import back_path_clustering, transval
 
 
-class Clusterer:
+class TweetClusterer:
 
     def __init__(self, topic: str, network_df: pd.DataFrame = None):
 

@@ -1,0 +1,31 @@
+import numpy as np
+import pandas as pd
+from EESpring19.NewsNetwork import NewsNetwork
+from EESpring19.Clusterer import Clusterer
+from EESpring19.plotter import plotter
+
+topics = ['Computers','History']
+print('Creating Network Object')
+Network = NewsNetwork(topics, "../../EESpring19/keys/SQL_Login.yml",'mutual_information')#mutual_information, word_union
+# Network = NewsNetwork(topics, "../../EESpring19/keys/SQL_Login.yml",'word_union')
+print('Building Document Adjacency Matrix')
+dam = Network.build_document_adjacency_matrix()
+print('Printing Document Adjacency Matrix')
+print(dam)
+print('Clustering')
+clusterings = Clusterer(dam**2)
+cluster = clusterings.get_clustering('backward_path')#backward_path, label_propagation
+print(cluster)
+plot = plotter(pd.DataFrame(dam),cluster)
+
+
+import numpy as np
+import pandas as pd
+from EESpring19.NewsNetwork import NewsNetwork
+from EESpring19.plotter import plotter
+topics = ['Computers']
+print('Creating Network Object')
+Network = NewsNetwork(topics, "./EESpring19/keys/SQL_Login.yml",'mutual_information')
+clusterings, dams = Network.build_news_network()
+plot = plotter(pd.DataFrame(dams[0]),list(clusterings[len(clusterings)-1]))
+plot.plot()

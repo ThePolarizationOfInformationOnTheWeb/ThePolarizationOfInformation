@@ -5,3 +5,5 @@ textblob        # NLP
 scipy           # scientific python
 scrapy          # newscrawler classes
 pymysql         # used to talk to MySQL data bases
+newspaper       # used to parse newspaper articles
+PyYaml          # unpack yaml files

@@ -1,6 +1,6 @@
 import pandas as pd
 import sys
-from TweetFeatureExtractor import TweetFeatureExtractor
+from EEFall18.TweetFeatureExtractor import TweetFeatureExtractor
 
 
 def main():

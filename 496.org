@@ -1,0 +1,19 @@
+* General f
+   [[mailto:dickensc@hawaii.edu,millarda@hawaii.edu,nsanthan@hawaii.edu][email]] 
+* Topic modeling
+** channel from documents to words (conditional iid)
+   SCHEDULED: <2019-02-13 Wed>
+** DONE channel capacity (blahut arimoto algorithm)
+   SCHEDULED: <2019-02-13 Wed>
+** TODO latent dirichlet allocation  [[http://www.jmlr.org/papers/volume3/blei03a/blei03a.pdf][blei-ng-jordan]]  
+** Label Propogation
+
+* Code
+** DONE Build news crawler
+   SCHEDULED: <2019-02-13 Wed>
+** DONE Build news article data pipeline
+   SCHEDULED: <2019-02-13 Wed>
+** DONE Implement blahut arimoto algorithm
+   SCHEDULED: <2019-02-13 Wed>
+** TODO Run Analysis on Articles
+   SCHEDULED: <2019-02-26 Tue>

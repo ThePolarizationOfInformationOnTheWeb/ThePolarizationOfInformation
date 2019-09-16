@@ -6,8 +6,13 @@ access_secret.txt
 consumer_key.txt
 consumer_secret.txt
 venv
-496/scrapy.exe
+*scrapy.exe
+*igraph
+496/newscrawler/newscrawler/SQL_Login.yml
+__pycache__
 *.pyc
 *.csv
 keys.csv
 twitter_keys.yaml
+*SQL_Login.yml
+__pycache__
